@@ -1,6 +1,6 @@
 {
   "name": "poops-images",
-  "description": "Image scaling, cropping & format conversion tool for poops SSG.",
+  "description": "CLI tool for preparing images for the web.",
   "version": "1.0.0",
   "license": "MIT",
   "type": "module",
