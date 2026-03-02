@@ -1,0 +1,50 @@
+{
+  "name": "poops-images",
+  "description": "Image scaling, cropping & format conversion tool for poops SSG.",
+  "version": "1.0.0",
+  "license": "MIT",
+  "type": "module",
+  "main": "lib/processor.js",
+  "bin": {
+    "poops-images": "poops-images.js"
+  },
+  "files": [
+    "poops-images.js",
+    "lib/",
+    "!lib/**/__tests__/"
+  ],
+  "author": "Stamat <@stamat> (http://stamat.info)",
+  "homepage": "https://github.com/stamat/poops-images",
+  "private": false,
+  "keywords": [
+    "image",
+    "resize",
+    "crop",
+    "webp",
+    "avif",
+    "sharp",
+    "responsive-images",
+    "cli",
+    "poops"
+  ],
+  "scripts": {
+    "build": "node ./poops-images.js -b",
+    "lint": "eslint ./poops-images.js ./lib/",
+    "test": "NODE_OPTIONS='--experimental-vm-modules' jest"
+  },
+  "dependencies": {
+    "argoyle": "^1.0.0",
+    "chokidar": "^3.5.3",
+    "exif-reader": "^2.0.3",
+    "glob": "^13.0.6",
+    "printstyle": "^1.0.0",
+    "sharp": "^0.33.0",
+    "svgo": "^4.0.0"
+  },
+  "devDependencies": {
+    "@jest/globals": "^30.2.0",
+    "eslint": "^9.39.3",
+    "jest": "^30.2.0",
+    "neostandard": "^0.12.2"
+  }
+}
