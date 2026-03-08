@@ -16,7 +16,7 @@ Features:
 - Smart format selection — compares JPEG vs WebP, keeps whichever is smaller
 - Transparency detection — auto-converts opaque PNGs and GIFs to JPEG
 - Never upscales — skips sizes larger than the source
-- Preprocessors — apply transformations (blur, grayscale, etc.) before generating variants, great for LQIP placeholders and hover effects
+- Preprocessors — apply transformations (blur, grayscale, custom handlers, etc.) before generating variants, great for LQIP placeholders, hover effects, and artistic filters like halftone
 - Watch mode with incremental processing
 - Configurable concurrency for parallel processing
 - Keeps track with cache
@@ -446,6 +446,8 @@ src/images/icons/logo.svg
   → dist/static/images/icons/logo.svg  (minified)
 ```
 
+SVGs can also be processed by preprocessors that have `"svg": true` set. The SVG is rasterized at its native dimensions, run through the preprocessor operations, and saved as a raster image (PNG) at original size only. See [Preprocessors](#preprocessors) for details.
+
 ### GIF handling
 
 **Static GIFs** (single-frame) are treated like any other raster image — resized, cropped, and format-converted. Opaque static GIFs become JPEG, transparent ones become PNG (or whatever `format` is set to).
@@ -529,6 +531,7 @@ photo-gray-thumb-200w.jpg          # grayscale thumbnail only
 | `format`       | same as global | _(global)_ | Override the global `format` for this preprocessor                |
 | `quality`      | same as global | _(global)_ | Override the global `quality` for this preprocessor               |
 | `skipOriginal` | `boolean` | _(global)_ | Override the global `skipOriginal` for this preprocessor               |
+| `svg`          | `boolean` | `false`    | Also process SVG source files through this preprocessor (rasterize → preprocess → save at original size) |
 
 Operations are composable — they chain in sequence on the sharp pipeline. For example, `[{ "type": "grayscale" }, { "type": "blur", "sigma": 5 }]` first desaturates, then blurs.
 
@@ -550,6 +553,7 @@ All operations map directly to [sharp](https://sharp.pixelplumbing.com/) methods
 | `flop`      | _(none)_                                                | Flip horizontally                                |
 | `gamma`     | `value` (number)                                        | Apply gamma correction                           |
 | `composite` | `input` (path), `gravity`, `blend`, `top`, `left`       | Overlay an image (e.g. watermark)                |
+| _(path)_    | any extra params                                         | Run a custom JS handler — use a file path as the `type` (see below) |
 
 The `composite` operation resolves the `input` path relative to the config file directory (or CWD). Example watermark config:
 
@@ -562,6 +566,77 @@ The `composite` operation resolves the `input` path relative to the config file 
 }
 ```
 
+#### Custom handlers
+
+If the `type` is not a built-in operation, it's treated as a custom handler. Resolution order:
+
+1. **Short name** — `"type": "halftone"` resolves to `handlers/halftone.js` relative to the config file directory (or CWD)
+2. **File path** — `"type": "./effects/halftone.js"` resolves the path directly relative to the config file directory (or CWD)
+
+A custom handler is a JS module that exports a function:
+
+```javascript
+/**
+ * @param {Buffer} buffer - Current image as a raw buffer
+ * @param {object} params - All extra properties from the operation config, plus { width, height }
+ * @param {Function} sharp - The sharp module, for convenience
+ * @returns {Promise<Buffer|{buffer: Buffer, sidecars: Array}>} - Transformed image buffer, or object with sidecars
+ */
+export default async function (buffer, params, sharp) {
+  // Transform the image using any library
+  return sharp(buffer).negate().png().toBuffer()
+}
+```
+
+The handler receives:
+- `buffer` — the current image as a Buffer (already EXIF-rotated, and with any prior operations applied)
+- `params` — all extra properties from the operation config object (everything except `type`), plus `width` and `height` of the current image
+- `sharp` — the sharp module, so you don't need to import it separately
+
+The handler can return:
+- A `Buffer` — the transformed image
+- An object `{ buffer, sidecars }` — the transformed image plus extra files to save alongside it. Each sidecar is `{ ext, data }` where `ext` is the file extension (e.g. `"svg"`) and `data` is a `Buffer`. Sidecars are saved as `{name}-{ppName}.{ext}` in the output directory.
+
+**Config example (short name):**
+
+```json
+{
+  "name": "halftone",
+  "operations": [
+    {
+      "type": "halftone",
+      "dotSize": "0.8%",
+      "spacing": "1%",
+      "shape": "square",
+      "foreground": "#43523d",
+      "background": "#c7f0d8"
+    }
+  ],
+  "sizes": [{ "name": "medium", "width": 1024 }],
+  "svg": true
+}
+```
+
+This looks for `handlers/halftone.js` in the config directory. The handler receives `{ dotSize: "0.8%", spacing: "1%", shape: "square", foreground: "#43523d", background: "#c7f0d8", width: ..., height: ... }` as `params`. The `svg: true` flag makes this preprocessor also process SVG source files (rasterized at their native dimensions).
+
+**Chaining:** Custom handlers can be mixed with built-in operations in any order. When a handler operation is encountered, the pipeline flushes the current buffer, calls your handler, and creates a new sharp instance from the result:
+
+```json
+{
+  "name": "styled",
+  "operations": [
+    { "type": "grayscale" },
+    { "type": "halftone", "dotSize": 4 },
+    { "type": "blur", "sigma": 1 }
+  ]
+}
+```
+
+**Bundled example handlers** (in the `handlers/` directory):
+
+- `halftone` — converts images to a halftone dot pattern. Supports circular dots (classic newspaper print) and square dots (Nokia LCD look). Emits an SVG sidecar alongside the raster output. Params: `dotSize`, `spacing`, `shape` (`"circle"` or `"square"`), `background`, `foreground`. Both `dotSize` and `spacing` accept absolute pixels (e.g. `8`) or percentages relative to the shortest side (e.g. `"1%"`)
+- `pixelate` — chunky pixel art / retro Nokia look via nearest-neighbor downscale/upscale. Params: `blockSize`, `colors` (palette limit), `grayscale`
+
 #### Output naming
 
 The preprocessor name is inserted between the source name and the size name:
@@ -573,7 +648,7 @@ Preprocessed:  {name}-{ppName}-{sizeName}-{width}w.{ext}  → photo-blurred-medi
 
 #### Edge cases
 
-- **SVGs** — preprocessors do not apply to SVGs (text-based SVGO pipeline)
+- **SVGs** — preprocessors with `"svg": true` also process SVG source files. The SVG is rasterized via sharp, run through the preprocessor operations, and saved at its native dimensions only (no resize variants). The minified SVG is still saved separately. Preprocessors without `"svg": true` skip SVG files
 - **Animated GIFs** — preprocessors do not apply (copied as-is). Static GIFs go through preprocessors normally
 - **Cache invalidation** — adding, removing, or changing any preprocessor invalidates all cache entries
 

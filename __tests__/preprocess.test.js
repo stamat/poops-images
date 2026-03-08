@@ -68,9 +68,20 @@ describe('validatePreprocessor', () => {
       .toThrow('non-empty array')
   })
 
-  it('should throw for unknown operation type', () => {
-    expect(() => validatePreprocessor({ name: 'test', operations: [{ type: 'vaporize' }] }))
-      .toThrow('unknown operation type "vaporize"')
+  it('should accept unknown name as custom handler', () => {
+    const result = validatePreprocessor({
+      name: 'test',
+      operations: [{ type: 'halftone', dotSize: 6 }]
+    })
+    expect(result.operations[0].type).toBe('halftone')
+  })
+
+  it('should accept a file path as operation type (custom handler)', () => {
+    const result = validatePreprocessor({
+      name: 'test',
+      operations: [{ type: './handlers/my-effect.js', param: 42 }]
+    })
+    expect(result.operations[0].type).toBe('./handlers/my-effect.js')
   })
 })
 
@@ -443,7 +454,7 @@ describe('ImageProcessor with preprocessors', () => {
 })
 
 describe('VALID_OPERATIONS', () => {
-  it('should export all supported operation types', () => {
+  it('should export all supported built-in operation types', () => {
     expect(VALID_OPERATIONS).toContain('blur')
     expect(VALID_OPERATIONS).toContain('grayscale')
     expect(VALID_OPERATIONS).toContain('sharpen')
@@ -456,5 +467,157 @@ describe('VALID_OPERATIONS', () => {
     expect(VALID_OPERATIONS).toContain('flop')
     expect(VALID_OPERATIONS).toContain('gamma')
     expect(VALID_OPERATIONS).toContain('composite')
+    expect(VALID_OPERATIONS).not.toContain('custom')
+  })
+})
+
+describe('custom handler operations', () => {
+  const CONFIG_DIR = path.join(FIXTURES_DIR, 'preprocess-custom-config')
+  const HANDLERS_DIR = path.join(CONFIG_DIR, 'handlers')
+  const HANDLER_INPUT = path.join(FIXTURES_DIR, 'preprocess-custom-input')
+  const HANDLER_OUTPUT = path.join(FIXTURES_DIR, 'preprocess-custom-output')
+  const HANDLER_PATH = path.join(HANDLERS_DIR, 'invert.js')
+
+  beforeAll(async () => {
+    cleanup(CONFIG_DIR)
+    cleanup(HANDLER_INPUT)
+    cleanup(HANDLER_OUTPUT)
+
+    fs.mkdirSync(HANDLERS_DIR, { recursive: true })
+    fs.mkdirSync(HANDLER_INPUT, { recursive: true })
+
+    // Create a simple custom handler that inverts colors
+    fs.writeFileSync(HANDLER_PATH,
+      `export default async function(buffer, params, sharp) {
+  return sharp(buffer).negate().png().toBuffer()
+}
+`)
+
+    await sharp({
+      create: { width: 200, height: 150, channels: 3, background: { r: 255, g: 0, b: 0 } }
+    }).jpeg({ quality: 90 }).toFile(path.join(HANDLER_INPUT, 'red.jpg'))
+  })
+
+  afterAll(() => {
+    cleanup(CONFIG_DIR)
+    cleanup(HANDLER_INPUT)
+    cleanup(HANDLER_OUTPUT)
+  })
+
+  it('should accept handler path as operation type', () => {
+    const result = validatePreprocessor({
+      name: 'test',
+      operations: [{ type: './my-handler.js' }]
+    })
+    expect(result.operations[0].type).toBe('./my-handler.js')
+  })
+
+  it('should accept short handler name as operation type', () => {
+    const result = validatePreprocessor({
+      name: 'test',
+      operations: [{ type: 'invert' }]
+    })
+    expect(result.operations[0].type).toBe('invert')
+  })
+
+  it('should apply custom handler via file path', async () => {
+    const inputPath = path.join(HANDLER_INPUT, 'red.jpg')
+    const result = await applyOperations(inputPath, [
+      { type: HANDLER_PATH }
+    ])
+    expect(result.data).toBeInstanceOf(Buffer)
+    expect(result.info.width).toBe(200)
+    expect(result.info.height).toBe(150)
+  })
+
+  it('should resolve short handler name to handlers/{name}.js', async () => {
+    const inputPath = path.join(HANDLER_INPUT, 'red.jpg')
+    // Pass CONFIG_DIR as configDir so it resolves to CONFIG_DIR/handlers/invert.js
+    const result = await applyOperations(inputPath, [
+      { type: 'invert' }
+    ], CONFIG_DIR)
+    expect(result.data).toBeInstanceOf(Buffer)
+    expect(result.info.width).toBe(200)
+    expect(result.info.height).toBe(150)
+  })
+
+  it('should produce different output from custom handler', async () => {
+    const inputPath = path.join(HANDLER_INPUT, 'red.jpg')
+
+    const original = await sharp(inputPath).raw().toBuffer()
+    const result = await applyOperations(inputPath, [
+      { type: HANDLER_PATH }
+    ])
+    const processed = await sharp(result.data).raw().toBuffer()
+
+    // Inverted image should have different pixel data
+    expect(Buffer.compare(original, processed)).not.toBe(0)
+  })
+
+  it('should pass extra params to custom handler', async () => {
+    // Create a handler that uses params
+    const paramHandlerPath = path.join(HANDLERS_DIR, 'with-params.js')
+    fs.writeFileSync(paramHandlerPath,
+      `export default async function(buffer, params, sharp) {
+  // Use the brightness param
+  return sharp(buffer).modulate({ brightness: params.brightness || 1 }).png().toBuffer()
+}
+`)
+
+    const inputPath = path.join(HANDLER_INPUT, 'red.jpg')
+    const result = await applyOperations(inputPath, [
+      { type: paramHandlerPath, brightness: 0.5 }
+    ])
+    expect(result.data).toBeInstanceOf(Buffer)
+  })
+
+  it('should chain custom with built-in operations', async () => {
+    const inputPath = path.join(HANDLER_INPUT, 'red.jpg')
+    const result = await applyOperations(inputPath, [
+      { type: 'grayscale' },
+      { type: HANDLER_PATH },
+      { type: 'blur', sigma: 2 }
+    ])
+    expect(result.data).toBeInstanceOf(Buffer)
+  })
+
+  it('should throw for missing handler file', async () => {
+    const inputPath = path.join(HANDLER_INPUT, 'red.jpg')
+    await expect(applyOperations(inputPath, [
+      { type: './nonexistent.js' }
+    ])).rejects.toThrow('Custom handler not found')
+  })
+
+  it('should throw for missing short-name handler', async () => {
+    const inputPath = path.join(HANDLER_INPUT, 'red.jpg')
+    await expect(applyOperations(inputPath, [
+      { type: 'nonexistent' }
+    ], CONFIG_DIR)).rejects.toThrow('Custom handler not found')
+  })
+
+  it('should work end-to-end with ImageProcessor', async () => {
+    const processor = new ImageProcessor({
+      in: HANDLER_INPUT,
+      out: HANDLER_OUTPUT,
+      sizes: [],
+      preprocessors: [
+        {
+          name: 'inverted',
+          operations: [{ type: HANDLER_PATH }]
+        }
+      ]
+    })
+
+    cleanup(HANDLER_OUTPUT)
+    await processor.processAll({ force: true })
+
+    const files = fs.readdirSync(HANDLER_OUTPUT).filter(f => !f.startsWith('.'))
+    expect(files).toContain('red.jpg')
+    expect(files).toContain('red-inverted.jpg')
+
+    // Verify they're different images
+    const original = fs.readFileSync(path.join(HANDLER_OUTPUT, 'red.jpg'))
+    const inverted = fs.readFileSync(path.join(HANDLER_OUTPUT, 'red-inverted.jpg'))
+    expect(Buffer.compare(original, inverted)).not.toBe(0)
   })
 })
