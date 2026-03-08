@@ -16,6 +16,7 @@ Features:
 - Smart format selection — compares JPEG vs WebP, keeps whichever is smaller
 - Transparency detection — auto-converts opaque PNGs and GIFs to JPEG
 - Never upscales — skips sizes larger than the source
+- Preprocessors — apply transformations (blur, grayscale, etc.) before generating variants, great for LQIP placeholders and hover effects
 - Watch mode with incremental processing
 - Configurable concurrency for parallel processing
 - Keeps track with cache
@@ -76,6 +77,7 @@ Usage: poops-images [input] [options]
   -w, --watch            Watch for changes and process incrementally
   -f, --force            Ignore cache, regenerate everything
       --dry-run          Show what would be processed without writing
+  -P, --preprocess <ops> Preprocess operations (e.g. blur:20,grayscale,sharpen:1.5)
   -q, --quiet            Suppress progress output
   -v, --version          Show version
   -h, --help             Show help
@@ -146,7 +148,15 @@ The config file is resolved in order:
   "exclude": [],
   "concurrency": 4,
   "skipOriginal": false,
-  "cache": true
+  "cache": true,
+  "preprocessors": [
+    {
+      "name": "lqip",
+      "operations": [{ "type": "blur", "sigma": 30 }],
+      "sizes": [{ "width": 32 }],
+      "skipOriginal": true
+    }
+  ]
 }
 ```
 
@@ -163,6 +173,7 @@ The config file is resolved in order:
 | `include`      | `string`               | `"**/*.{jpg,jpeg,png,tiff,tif,webp,heic,heif}"` | Glob pattern for source images                                                                                                                        |
 | `exclude`      | `array`                | `[]`                                            | Glob patterns to exclude                                                                                                                              |
 | `concurrency`  | `number`               | `4`                                             | Max parallel image operations                                                                                                                         |
+| `preprocessors`| `array`                | `[]`                                            | Preprocessor definitions (see [Preprocessors](#preprocessors) below)                                                                                  |
 | `cache`        | `true\|false\|string`  | `true`                                          | Cache behavior. `true` = default cache file in output dir, `false` = no cache, `"path"` = custom cache file path (relative to output dir or absolute) |
 
 ### Size definitions
@@ -234,6 +245,14 @@ const processor2 = new ImageProcessor({
   ],
   format: "webp",
   quality: { jpg: 85, webp: 80 },
+  preprocessors: [
+    {
+      name: "lqip",
+      operations: [{ type: "blur", sigma: 30 }],
+      sizes: [{ width: 32 }],
+      skipOriginal: true,
+    },
+  ],
 });
 
 const stats = await processor2.processAll();
@@ -433,6 +452,131 @@ src/images/icons/logo.svg
 
 **Animated GIFs** (multi-frame) are copied to the output directory unchanged. No resizing or format conversion — animated GIFs would lose their frames through sharp's raster pipeline.
 
+### Preprocessors
+
+Preprocessors apply sharp transformations to the source image **before** the resize/format pipeline runs. Each preprocessor generates its own set of variants alongside the untouched original's variants. This is useful for generating blurred placeholder images (LQIP), grayscale variants for hover effects, watermarked versions for public galleries, etc.
+
+#### CLI usage
+
+The `--preprocess` / `-P` flag is a quick way to add a single preprocessor:
+
+```bash
+# Blur all images
+npx poops-images --in src/images --out dist --preprocess blur:20
+
+# Grayscale
+npx poops-images --in src/images --out dist --preprocess grayscale
+
+# Chain operations
+npx poops-images --in src/images --out dist --preprocess grayscale,blur:10
+```
+
+When used via CLI, the preprocessor is named `"preprocessed"` and produces files like `photo-preprocessed-medium-300w.jpg`.
+
+#### Config usage
+
+For full control, define preprocessors in the config file. Each preprocessor has a `name` (used in filenames) and an `operations` array:
+
+```json
+{
+  "in": "src/images",
+  "out": "dist/images",
+  "sizes": [
+    { "name": "small", "width": 480 },
+    { "name": "medium", "width": 1024 }
+  ],
+  "preprocessors": [
+    {
+      "name": "blurred",
+      "operations": [{ "type": "blur", "sigma": 15 }]
+    },
+    {
+      "name": "lqip",
+      "operations": [{ "type": "blur", "sigma": 30 }],
+      "sizes": [{ "width": 32 }],
+      "skipOriginal": true
+    },
+    {
+      "name": "gray",
+      "operations": [{ "type": "grayscale" }],
+      "sizes": [{ "name": "thumb", "width": 200, "height": 200, "crop": true }],
+      "skipOriginal": true
+    }
+  ]
+}
+```
+
+This produces for `photo.jpg` (assuming it's large enough):
+
+```
+photo.jpg                          # original passthrough
+photo-small-480w.jpg               # original sized
+photo-medium-1024w.jpg             # original sized
+photo-blurred.jpg                  # blurred passthrough
+photo-blurred-small-480w.jpg       # blurred sized
+photo-blurred-medium-1024w.jpg     # blurred sized
+photo-lqip-32w.jpg                 # tiny blurred placeholder only
+photo-gray-thumb-200w.jpg          # grayscale thumbnail only
+```
+
+#### Preprocessor definition
+
+| Field          | Type      | Default   | Description                                                            |
+| -------------- | --------- | --------- | ---------------------------------------------------------------------- |
+| `name`         | `string`  | required  | Identifier used in output filenames. Must be unique, alphanumeric/dash/underscore only |
+| `operations`   | `array`   | required  | Ordered list of operations to apply (see table below)                  |
+| `sizes`        | `array`   | _(global)_ | Override the global `sizes` for this preprocessor                      |
+| `format`       | same as global | _(global)_ | Override the global `format` for this preprocessor                |
+| `quality`      | same as global | _(global)_ | Override the global `quality` for this preprocessor               |
+| `skipOriginal` | `boolean` | _(global)_ | Override the global `skipOriginal` for this preprocessor               |
+
+Operations are composable — they chain in sequence on the sharp pipeline. For example, `[{ "type": "grayscale" }, { "type": "blur", "sigma": 5 }]` first desaturates, then blurs.
+
+#### Available operations
+
+All operations map directly to [sharp](https://sharp.pixelplumbing.com/) methods:
+
+| Operation   | Parameters                                              | Description                                      |
+| ----------- | ------------------------------------------------------- | ------------------------------------------------ |
+| `blur`      | `sigma` (number, 0.3–1000)                              | Gaussian blur                                    |
+| `grayscale` | _(none)_                                                | Convert to grayscale                             |
+| `sharpen`   | `sigma` (number, optional)                              | Sharpen                                          |
+| `tint`      | `color` (string, e.g. `"#ff0000"`)                      | Tint with a color                                |
+| `modulate`  | `brightness`, `saturation`, `hue`, `lightness` (numbers) | Adjust brightness/saturation/hue                 |
+| `negate`    | _(none)_                                                | Invert colors                                    |
+| `normalize` | _(none)_                                                | Stretch contrast to full range                   |
+| `rotate`    | `angle` (number, degrees)                               | Rotate by exact angle                            |
+| `flip`      | _(none)_                                                | Flip vertically                                  |
+| `flop`      | _(none)_                                                | Flip horizontally                                |
+| `gamma`     | `value` (number)                                        | Apply gamma correction                           |
+| `composite` | `input` (path), `gravity`, `blend`, `top`, `left`       | Overlay an image (e.g. watermark)                |
+
+The `composite` operation resolves the `input` path relative to the config file directory (or CWD). Example watermark config:
+
+```json
+{
+  "name": "watermarked",
+  "operations": [
+    { "type": "composite", "input": "assets/watermark.png", "gravity": "southeast" }
+  ]
+}
+```
+
+#### Output naming
+
+The preprocessor name is inserted between the source name and the size name:
+
+```
+Original:      {name}-{sizeName}-{width}w.{ext}      → photo-medium-1024w.jpg
+Preprocessed:  {name}-{ppName}-{sizeName}-{width}w.{ext}  → photo-blurred-medium-1024w.jpg
+```
+
+#### Edge cases
+
+- **SVGs** — preprocessors do not apply to SVGs (text-based SVGO pipeline)
+- **Animated GIFs** — preprocessors do not apply (copied as-is). Static GIFs go through preprocessors normally
+- **Cache invalidation** — adding, removing, or changing any preprocessor invalidates all cache entries
+
 ### Caching
 
 A cache file (`.poops-images-cache.json`) is stored in the output directory. It tracks per image: source mtime, size, original dimensions, EXIF metadata, and generated outputs with their dimensions.
@@ -469,7 +613,7 @@ A cache file (`.poops-images-cache.json`) is stored in the output directory. It 
 **Skip logic:**
 
 1. `--force` — always reprocess
-2. Config hash changed (sizes/format/quality/skipOriginal differ) — reprocess everything
+2. Config hash changed (sizes/format/quality/skipOriginal/preprocessors differ) — reprocess everything
 3. Per file: skip if source mtime + size unchanged AND all expected outputs exist on disk
 4. On source deletion (watch mode): remove all generated variants
 
@@ -575,6 +719,7 @@ If you deploy GitHub Pages, do not run `poops-images` in the GitHub Actions to w
 | Config file            | JSON, poops.json fallback                | CLI flags only                                      | JS API only                                                                              | JSON                                                                               | JS API (Eleventy-coupled)                                      |
 | CLI                    | Standalone                               | Standalone                                          | No (API only)                                                                            | No (API only)                                                                      | No (Eleventy plugin)                                           |
 | Concurrency control    | Configurable worker count                | No                                                  | No                                                                                       | Multi-threaded                                                                     | Yes                                                            |
+| Preprocessors          | Blur, grayscale, watermark, etc. per-image | No                                                | No                                                                                       | No                                                                                 | No                                                             |
 | SSG coupling           | Designed for poops, usable standalone    | None                                                | None                                                                                     | None                                                                               | Tightly coupled to Eleventy                                    |
 | Maintained             | Active                                   | Last publish 2022                                   | Last publish 2019                                                                        | Last publish 2018                                                                  | Active                                                         |
 
@@ -585,6 +730,7 @@ If you deploy GitHub Pages, do not run `poops-images` in the GitHub Actions to w
 - **WordPress-style crop API** — full 9-position anchor grid (`["left", "top"]`), not just center crop.
 - **Integrated SVG pipeline** — SVGO minification in the same tool. Others require a separate build step.
 - **Convention-based naming** — `{name}-{sizeName}-{width}w.{ext}` is purpose-built for poops' `discoverImageVariants()` srcset generation.
+- **Preprocessors** — generate LQIP placeholders, grayscale hover variants, or watermarked copies alongside originals, all from config. No other tool has a built-in preprocessor pipeline.
 - **Standalone CLI + API** — works with any build system or none at all, unlike Eleventy-coupled or webpack-coupled alternatives.
 
 ## License

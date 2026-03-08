@@ -77,6 +77,32 @@ cli.option('quality', {
 })
 cli.option('dry-run', { description: 'Show what would be processed without writing' })
 cli.option('skip-original', { description: 'Skip the original (non-resized) compressed image' })
+cli.option('preprocess', {
+  short: 'P',
+  value: '<ops>',
+  description: 'Preprocess operations (e.g. blur:20,grayscale,sharpen:1.5)',
+  callback: (val) => {
+    const PRIMARY_PARAM = {
+      blur: 'sigma',
+      sharpen: 'sigma',
+      gamma: 'value',
+      rotate: 'angle',
+      tint: 'color'
+    }
+    return val.split(',').map(op => {
+      const [type, ...args] = op.trim().split(':')
+      const params = { type }
+      if (args.length === 1) {
+        const key = PRIMARY_PARAM[type]
+        if (key) {
+          const num = Number(args[0])
+          params[key] = isNaN(num) ? args[0] : num
+        }
+      }
+      return params
+    })
+  }
+})
 
 cli.line('')
 cli.line('Quick mode (no config file needed):')
@@ -97,6 +123,7 @@ try {
   const cliFormat = flags.format
   const cliQuality = flags.quality
   const skipOriginal = flags['skip-original']
+  const cliPreprocess = flags.preprocess
 
   if (quiet) setQuiet(true)
 
@@ -138,6 +165,7 @@ try {
     if (cliFormat !== null) raw.format = cliFormat
     if (cliQuality != null) raw.quality = cliQuality
     if (skipOriginal) raw.skipOriginal = true
+    if (cliPreprocess) raw.preprocessors = [{ name: 'preprocessed', operations: cliPreprocess }]
     config = validateConfig(raw)
   } else {
     config = loadConfig(configPath)
@@ -153,6 +181,10 @@ try {
       }
     }
     if (skipOriginal) config.skipOriginal = true
+    if (cliPreprocess) {
+      config.preprocessors = config.preprocessors || []
+      config.preprocessors.push({ name: 'preprocessed', operations: cliPreprocess })
+    }
   }
   const processor = new ImageProcessor(config)
 
