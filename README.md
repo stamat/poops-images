@@ -672,6 +672,7 @@ This looks for `handlers/halftone.js` in the config directory. The handler recei
 
 - `halftone` — converts images to a halftone dot pattern. Supports circular dots (classic newspaper print) and square dots (Nokia LCD look). Emits an SVG sidecar alongside the raster output. Params: `dotSize`, `spacing`, `shape` (`"circle"` or `"square"`), `background`, `foreground`. Both `dotSize` and `spacing` accept absolute pixels (e.g. `8`) or percentages relative to the shortest side (e.g. `"1%"`)
 - `pixelate` — chunky pixel art / retro Nokia look via nearest-neighbor downscale/upscale. Params: `blockSize`, `colors` (palette limit), `grayscale`
+- `ascii` — converts images to ASCII character art (dark-to-light ramp `@%#*+=-:. `). Outputs a raster image plus two sidecars: plain text (`.txt`) and monospace-text SVG (`.svg`). Params: `fontSize`, `foreground`, `background`
 
 #### Output naming
 
