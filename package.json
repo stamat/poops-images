@@ -30,7 +30,7 @@
   "scripts": {
     "build": "node ./poops-images.js -b",
     "lint": "eslint ./poops-images.js ./lib/",
-    "test": "NODE_OPTIONS='--experimental-vm-modules' jest"
+    "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js"
   },
   "dependencies": {
     "argoyle": "^1.0.0",
