@@ -532,8 +532,44 @@ photo-gray-thumb-200w.jpg          # grayscale thumbnail only
 | `quality`      | same as global | _(global)_ | Override the global `quality` for this preprocessor               |
 | `skipOriginal` | `boolean` | _(global)_ | Override the global `skipOriginal` for this preprocessor               |
 | `svg`          | `boolean` | `false`    | Also process SVG source files through this preprocessor (rasterize → preprocess → save at original size) |
+| `resizeFirst`  | `boolean` or `object` | `false` | Resize before preprocessing instead of after (see below) |
 
 Operations are composable — they chain in sequence on the sharp pipeline. For example, `[{ "type": "grayscale" }, { "type": "blur", "sigma": 5 }]` first desaturates, then blurs.
+
+#### resizeFirst — order of resize and operations
+
+By default, operations run once on the full-size source, and size variants are generated from that result. That's the right order for most filters (blur, tint, grayscale look the same either way), but effects with a fixed pixel scale — pixelate blocks, halftone dots, ASCII cells — come out at a different visual density on every variant. `resizeFirst` flips the order:
+
+| Value             | Behavior                                                                    |
+| ----------------- | --------------------------------------------------------------------------- |
+| `false` (default) | Preprocess the full-size source once, then resize into variants             |
+| `true`            | Resize each variant first, then preprocess it — pixel-scale effects look identical across variants |
+| `{ width, height, crop }` | Resize the source to this base size once, preprocess once, then generate variants from the base — one preprocessing pass, and variants never exceed the base dimensions |
+
+```json
+{
+  "preprocessors": [
+    {
+      "name": "pixel",
+      "operations": [{ "type": "pixelate", "blockSize": 8 }],
+      "resizeFirst": true
+    },
+    {
+      "name": "lqip",
+      "operations": [{ "type": "blur", "sigma": 10 }],
+      "resizeFirst": { "width": 64 },
+      "sizes": [{ "width": 32 }],
+      "skipOriginal": true
+    }
+  ]
+}
+```
+
+With `"resizeFirst": true`, the 8-pixel blocks are 8 output pixels in every variant. Without it, blocks are 8 pixels of the source, so a 4000px source downscaled to 480px shows ~1px blocks.
+
+The object form accepts the same shape as a size definition (`width` and/or `height`, optional `crop`) and never upscales — a base larger than the source is clamped to the source, keeping the crop aspect ratio. It's also a performance lever: expensive operations run once on a small base instead of once per variant or once at full size.
+
+Sidecar-emitting handlers (like `halftone`'s SVG) write their sidecar once per preprocessor: from the full-size pass by default, from the first variant with `resizeFirst: true`, or from the base with the object form.
 
 #### Available operations
 
