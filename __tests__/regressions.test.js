@@ -69,6 +69,12 @@ describe('resizeFirst validation', () => {
   ])('accepts valid form: %s', (_label, good) => {
     expect(() => validatePreprocessor({ ...base, resizeFirst: good })).not.toThrow()
   })
+
+  it('is idempotent — config is validated twice (loadConfig + processor constructor)', () => {
+    const once = validatePreprocessor({ ...base, resizeFirst: { width: 1024 } })
+    const twice = validatePreprocessor(once)
+    expect(twice.resizeFirst).toEqual(once.resizeFirst)
+  })
 })
 
 describe('configDir — handler resolution relative to config file (README §custom handlers)', () => {
