@@ -5,7 +5,7 @@ import sharp from 'sharp'
 import ImageProcessor from '../lib/processor.js'
 
 // bliss.jpg: 4400x3300, JPEG, no alpha, sRGB (4:3 aspect ratio)
-const BLISS_PATH = path.join(import.meta.dirname, '..', 'src', 'bliss.jpg')
+const BLISS_PATH = path.join(import.meta.dirname, 'fixtures', 'bliss.jpg')
 const FIXTURES_DIR = path.join(import.meta.dirname, 'fixtures')
 const TEST_INPUT = path.join(FIXTURES_DIR, 'bliss-input')
 const TEST_OUTPUT = path.join(FIXTURES_DIR, 'bliss-output')
