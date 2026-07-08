@@ -70,7 +70,7 @@ async function createTransparentGif(filename, width, height) {
 
 function cleanup(dir) {
   if (fs.existsSync(dir)) {
-    fs.rmSync(dir, { recursive: true, force: true })
+    fs.rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 })
   }
 }
 

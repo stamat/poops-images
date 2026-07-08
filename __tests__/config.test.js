@@ -146,7 +146,7 @@ describe('loadConfig', () => {
 
   afterEach(() => {
     process.chdir(originalCwd)
-    fs.rmSync(LOAD_TMP, { recursive: true, force: true })
+    fs.rmSync(LOAD_TMP, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 })
   })
 
   it('should load explicit config path', () => {

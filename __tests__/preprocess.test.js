@@ -20,7 +20,7 @@ async function createTestImage(filename, width, height, color = { r: 255, g: 0, 
 
 function cleanup(dir) {
   if (fs.existsSync(dir)) {
-    fs.rmSync(dir, { recursive: true, force: true })
+    fs.rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 })
   }
 }
 

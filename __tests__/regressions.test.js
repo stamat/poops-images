@@ -17,7 +17,7 @@ const TEST_OUTPUT = path.join(FIXTURES_DIR, 'regressions-output')
 const ECHO_HANDLER = path.join(FIXTURES_DIR, 'echo-handler.js')
 
 function cleanup(dir) {
-  if (fs.existsSync(dir)) fs.rmSync(dir, { recursive: true, force: true })
+  if (fs.existsSync(dir)) fs.rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 })
 }
 
 async function meta(file) {
@@ -84,7 +84,7 @@ describe('configDir — handler resolution relative to config file (README §cus
     fs.writeFileSync(configPath, JSON.stringify({ in: 'in', out: 'out', sizes: [{ width: 300 }] }))
     const config = loadConfig(configPath)
     expect(config.configDir).toBe(dir)
-    fs.rmSync(dir, { recursive: true, force: true })
+    fs.rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 })
   })
 
   it('resolves short-name handlers from configDir, not process.cwd()', async() => {
@@ -108,7 +108,7 @@ describe('configDir — handler resolution relative to config file (README §cus
 
     // Handler lives only under the config dir — output exists only if resolution honors configDir
     expect(outputs()).toContain('bliss-custom-300w.jpg')
-    fs.rmSync(dir, { recursive: true, force: true })
+    fs.rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 })
   })
 })
 

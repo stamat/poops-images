@@ -14,7 +14,7 @@ const TEST_INPUT = path.join(FIXTURES_DIR, 'exif-input')
 const TEST_OUTPUT = path.join(FIXTURES_DIR, 'exif-output')
 
 function cleanup(dir) {
-  if (fs.existsSync(dir)) fs.rmSync(dir, { recursive: true, force: true })
+  if (fs.existsSync(dir)) fs.rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 })
 }
 
 // 200x100 raw pixels; orientation 6/8 displays as 100x200 portrait

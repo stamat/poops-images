@@ -12,7 +12,7 @@ const TEST_OUTPUT = path.join(FIXTURES_DIR, 'bliss-output')
 
 function cleanup(dir) {
   if (fs.existsSync(dir)) {
-    fs.rmSync(dir, { recursive: true, force: true })
+    fs.rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 })
   }
 }
 
