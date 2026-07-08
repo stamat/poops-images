@@ -171,6 +171,47 @@ describe('resizeFirst — operation ordering (locks behavior through refactors)'
   })
 })
 
+describe('per-preprocessor smart format — transparency detection', () => {
+  it('detects transparency when only a preprocessor uses smart', async() => {
+    const { analyzeImage } = await import('../lib/analyze.js')
+    const input = path.join(TEST_INPUT, 'transparent.png')
+    await sharp({ create: { width: 100, height: 100, channels: 4, background: { r: 255, g: 0, b: 0, alpha: 0.5 } } })
+      .png()
+      .toFile(input)
+
+    const config = {
+      in: TEST_INPUT,
+      sizes: [],
+      skipOriginal: false,
+      format: 'webp', // global format has no smart — pre-fix this skipped the check
+      preprocessors: [{ name: 'pp', operations: [{ type: 'grayscale' }], format: 'smart' }]
+    }
+    const job = await analyzeImage(input, config, fs.statSync(input))
+    // smart needs transparency info or it flattens alpha to jpg
+    expect(job.transparent).toBe(true)
+  })
+})
+
+describe('_resizeToBase crop clamp keeps aspect ratio', () => {
+  it('clamps proportionally when the crop target exceeds the source', async() => {
+    const input = path.join(TEST_INPUT, 'clamp-src.jpg')
+    await sharp({ create: { width: 200, height: 150, channels: 3, background: '#456' } })
+      .jpeg()
+      .toFile(input)
+
+    const processor = new ImageProcessor({
+      in: TEST_INPUT, out: TEST_OUTPUT, sizes: [{ width: 100 }], cache: false
+    })
+    // 400x100 crop (4:1) from a 200x150 source — independent clamping would
+    // produce 200x100 (2:1); proportional clamping keeps 4:1 → 200x50
+    const base = await processor._resizeToBase(input, { width: 400, height: 100, crop: true }, {
+      sourceWidth: 200, sourceHeight: 150
+    })
+    expect(base.info.width).toBe(200)
+    expect(base.info.height).toBe(50)
+  })
+})
+
 describe('no intermediate lossy encode (single generation loss)', () => {
   it('output quality matches a single-pass encode', async() => {
     cleanup(TEST_OUTPUT)
