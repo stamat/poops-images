@@ -4,7 +4,6 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { loadConfig, validateConfig } from './lib/config.js'
 import ImageProcessor from './lib/processor.js'
-import { setQuiet } from './lib/utils/log.js'
 import PrintStyle from 'printstyle'
 import Argoyle from 'argoyle'
 
@@ -39,7 +38,7 @@ cli.option('widths', {
 })
 cli.option('in', { short: 'i', value: '<path>', description: 'Input directory or file path (default: .)' })
 cli.option('out', { short: 'o', value: '<path>', description: 'Output directory (default: .)' })
-cli.option('quiet', { short: 'q', description: 'Suppress progress output' })
+cli.option('verbose', { description: 'Show per-file progress output' })
 cli.option('format', {
   short: 'F',
   value: '<format>',
@@ -50,7 +49,7 @@ cli.option('format', {
   }
 })
 cli.option('quality', {
-  short: 'Q',
+  short: 'q',
   value: '<value>',
   description: 'Quality 1-100 (all formats) or per-format (e.g. webp:60,avif:40)',
   callback: (val) => {
@@ -115,7 +114,6 @@ try {
   const watchMode = flags.watch
   const force = flags.force
   const configPath = flags.config || null
-  const quiet = flags.quiet
   const dryRun = flags['dry-run']
   const cliWidths = flags.widths
   let cliIn = flags.in || positionals[0] || null
@@ -124,8 +122,7 @@ try {
   const cliQuality = flags.quality
   const skipOriginal = flags['skip-original']
   const cliPreprocess = flags.preprocess
-
-  if (quiet) setQuiet(true)
+  const cliVerbose = flags.verbose
 
   // CLI Header
   const title = `💩\uD83D\uDCF8 Poops Images \u2014 v${pkg.version}`
@@ -186,6 +183,7 @@ try {
       config.preprocessors.push({ name: 'preprocessed', operations: cliPreprocess })
     }
   }
+  if (cliVerbose) config.verbose = true
   const processor = new ImageProcessor(config)
 
   await processor.processAll({ force, dryRun })

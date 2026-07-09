@@ -52,7 +52,7 @@ npx poops-images --in src/images --out dist/images
 npx poops-images --format webp --in photo.jpg --out dist/images
 
 # Convert to webp at lower quality
-npx poops-images --in photo.jpg --out dist/images --format webp --quality 60
+npx poops-images --in photo.jpg --out dist/images --format webp -q 60
 
 # Process a directory with multiple size variants
 npx poops-images src/images --out dist/images --widths 300,768,1024
@@ -70,7 +70,7 @@ Usage: poops-images [input] [options]
   -o, --out <path>       Output directory (default: .)
   -s, --widths <list>    Comma-separated widths (e.g. 300,768,1024)
   -F, --format <format>  Output format(s): smart, webp, avif, or comma-separated (e.g. smart,avif)
-  -Q, --quality <value>  Quality 1-100 (all formats) or per-format (e.g. webp:60,avif:40)
+  -q, --quality <value>  Quality 1-100 (all formats) or per-format (e.g. webp:60,avif:40)
       --skip-original    Skip the original (non-resized) compressed image
   -c, --config <path>    Config file path (default: poops-images.json)
   -b, --build            Process all images and exit (default)
@@ -78,10 +78,15 @@ Usage: poops-images [input] [options]
   -f, --force            Ignore cache, regenerate everything
       --dry-run          Show what would be processed without writing
   -P, --preprocess <ops> Preprocess operations (e.g. blur:20,grayscale,sharpen:1.5)
-  -q, --quiet            Suppress progress output
+      --verbose          Show per-file progress output
   -v, --version          Show version
   -h, --help             Show help
 ```
+
+Breaking CLI change:
+- `--quiet` was removed (quiet is now the default).
+- Use `--verbose` to show per-file progress logs.
+- `-q` is now the short flag for `--quality`.
 
 The first positional argument is treated as the input path:
 
@@ -175,6 +180,7 @@ The config file is resolved in order:
 | `concurrency`  | `number`               | `4`                                             | Max parallel image operations                                                                                                                         |
 | `preprocessors`| `array`                | `[]`                                            | Preprocessor definitions (see [Preprocessors](#preprocessors) below)                                                                                  |
 | `cache`        | `true\|false\|string`  | `true`                                          | Cache behavior. `true` = default cache file in output dir, `false` = no cache, `"path"` = custom cache file path (relative to output dir or absolute) |
+| `verbose`      | `boolean`              | `false`                                         | Per-file progress logs. `false` = only the end-of-run summary and errors are printed (enable with CLI `--verbose`)                                      |
 
 ### Size definitions
 
@@ -256,7 +262,7 @@ const processor2 = new ImageProcessor({
 });
 
 const stats = await processor2.processAll();
-// { processed: 12, variants: 48, skipped: 0, bytes: 245760, elapsed: 2300 }
+// { processed: 12, variants: 48, skipped: 0, bytes: 245760, errors: 0, elapsed: 2300 }
 
 // Force reprocess (ignore cache)
 await processor2.processAll({ force: true });

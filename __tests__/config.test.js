@@ -17,6 +17,12 @@ describe('validateConfig', () => {
     expect(result.sizes).toHaveLength(1)
     expect(result.format).toBe(false)
     expect(result.concurrency).toBe(4)
+    expect(result.verbose).toBe(false)
+  })
+
+  it('should enable verbose only when explicitly true', () => {
+    const result = validateConfig({ ...minimalConfig, verbose: true })
+    expect(result.verbose).toBe(true)
   })
 
   it('should accept format as string', () => {
