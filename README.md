@@ -15,7 +15,7 @@ Features:
   - GIF (animated) → copied as-is, no compression, no crops
 - Smart format selection — compares JPEG vs WebP, keeps whichever is smaller
 - Transparency detection — auto-converts opaque PNGs and GIFs to JPEG
-- Never upscales — skips sizes larger than the source
+- Never upscales — skips oversized plain sizes; scales oversized crops down to fit instead
 - Preprocessors — apply transformations (blur, grayscale, custom handlers, etc.) before generating variants, great for LQIP placeholders, hover effects, and artistic filters like halftone
 - Watch mode with incremental processing
 - Configurable concurrency for parallel processing
@@ -228,6 +228,18 @@ Always 150x150, cropped from center.
 ```
 
 Always 1920x600, anchored to top-center (preserves sky/header area).
+
+#### Output filenames & named-size groups
+
+- Unnamed size → `photo-{width}w.{ext}` (e.g. `photo-960w.webp`).
+- Original / conversion-only → `photo.{ext}`.
+- Named size → `photo-{name}-{width}w.{ext}`, **except** the largest of a group, which drops the width suffix and becomes the canonical "main" variant: `photo-{name}.{ext}`.
+
+So two `thumb` sizes at 480 and 960 produce `photo-thumb-480w.webp` and `photo-thumb.webp` (the 960, main). A single `thumb` size is trivially the largest, so it too is written as `photo-thumb.webp`. This lets [Poops](https://github.com/stamat/poops) assemble a `srcset` for the whole named group with `{% image ..., size='thumb' %}` — the main's real width is read from the compile cache.
+
+#### Crops on undersized sources
+
+Soft/width-only sizes are never upscaled — a size larger than the source is skipped. **Hard crops are different: they're scaled down to fit rather than skipped.** If the source is smaller than the crop box on either axis, the box is scaled down proportionally (keeping the crop's aspect ratio) and the image is cropped to the largest box that fits. A `thumb` 960×960 crop from a 1083×726 source yields a 726×726 crop, not a dropped variant.
 
 ## API
 

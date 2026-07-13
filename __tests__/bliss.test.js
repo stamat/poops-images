@@ -51,8 +51,9 @@ describe('bliss.jpg — comprehensive real image test', () => {
       await processor.processAll({ force: true })
 
       // 4400x3300 (4:3) fit inside 300x300 → 300x225
+      // 'medium' is the sole (largest) member of its group → no width suffix
       const files = listOutputFiles()
-      const variant = files.find(f => f === 'bliss-medium-300w.jpg')
+      const variant = files.find(f => f === 'bliss-medium.jpg')
       expect(variant).toBeDefined()
 
       const meta = await sharp(path.join(TEST_OUTPUT, variant)).metadata()
@@ -65,19 +66,20 @@ describe('bliss.jpg — comprehensive real image test', () => {
       const processor = new ImageProcessor({
         in: TEST_INPUT,
         out: TEST_OUTPUT,
-        sizes: [{ name: 'wide', width: 1000, height: 500 }],
+        sizes: [{ width: 1000, height: 500 }],
 
       })
 
       cleanup(TEST_OUTPUT)
       await processor.processAll({ force: true })
 
-      // 4400x3300 (4:3) fit inside 1000x500 → 667x500 (height-constrained)
+      // 4400x3300 (4:3) fit inside 1000x500 → 667x500 (height-constrained).
+      // Unnamed size → filename carries the actual (667), not configured (1000), width.
       const files = listOutputFiles()
-      const variant = files.find(f => f.startsWith('bliss-wide-') && f.endsWith('.jpg'))
+      const variant = files.find(f => f.startsWith('bliss-') && /-\d+w\.jpg$/.test(f))
       expect(variant).toBeDefined()
 
-      const match = variant.match(/^bliss-wide-(\d+)w\.jpg$/)
+      const match = variant.match(/^bliss-(\d+)w\.jpg$/)
       expect(match).not.toBeNull()
 
       const meta = await sharp(path.join(TEST_OUTPUT, variant)).metadata()
@@ -101,7 +103,7 @@ describe('bliss.jpg — comprehensive real image test', () => {
       await processor.processAll({ force: true })
 
       const files = listOutputFiles()
-      const variant = files.find(f => f === 'bliss-thumb-150w.jpg')
+      const variant = files.find(f => f === 'bliss-thumb.jpg')
       expect(variant).toBeDefined()
 
       const meta = await sharp(path.join(TEST_OUTPUT, variant)).metadata()
@@ -121,7 +123,7 @@ describe('bliss.jpg — comprehensive real image test', () => {
       await processor.processAll({ force: true })
 
       const files = listOutputFiles()
-      const variant = files.find(f => f === 'bliss-hero-1920w.jpg')
+      const variant = files.find(f => f === 'bliss-hero.jpg')
       expect(variant).toBeDefined()
 
       const meta = await sharp(path.join(TEST_OUTPUT, variant)).metadata()
@@ -156,7 +158,7 @@ describe('bliss.jpg — comprehensive real image test', () => {
 
       const files = listOutputFiles()
       for (let i = 0; i < 9; i++) {
-        const variant = files.find(f => f === `bliss-pos${i}-400w.jpg`)
+        const variant = files.find(f => f === `bliss-pos${i}.jpg`)
         expect(variant).toBeDefined()
 
         const meta = await sharp(path.join(TEST_OUTPUT, variant)).metadata()
@@ -186,23 +188,21 @@ describe('bliss.jpg — comprehensive real image test', () => {
 
       const files = listOutputFiles()
 
+      // Each named size is the sole member of its group → main → no width suffix
       // thumbnail: hard crop → 150x150
-      expect(files).toContain('bliss-thumbnail-150w.jpg')
+      expect(files).toContain('bliss-thumbnail.jpg')
 
       // medium: soft crop 300x300 → 300x225
-      const medVariant = files.find(f => f.startsWith('bliss-medium-'))
-      expect(medVariant).toBeDefined()
+      expect(files).toContain('bliss-medium.jpg')
 
       // medium_large: width only → 768xN
-      const mlVariant = files.find(f => f.startsWith('bliss-medium_large-'))
-      expect(mlVariant).toBeDefined()
+      expect(files).toContain('bliss-medium_large.jpg')
 
       // large: soft crop 1024x1024 → 1024x768
-      const lgVariant = files.find(f => f.startsWith('bliss-large-'))
-      expect(lgVariant).toBeDefined()
+      expect(files).toContain('bliss-large.jpg')
 
       // hero: hard crop → 1920x600
-      expect(files).toContain('bliss-hero-1920w.jpg')
+      expect(files).toContain('bliss-hero.jpg')
 
       expect(files.filter(f => f.startsWith('bliss-'))).toHaveLength(5)
     })
@@ -230,16 +230,16 @@ describe('bliss.jpg — comprehensive real image test', () => {
       }
 
       // Hard crop: exact 150x150
-      await check('bliss-thumbnail-150w.jpg', 150, 150)
+      await check('bliss-thumbnail.jpg', 150, 150)
 
       // Soft crop: 4400x3300 into 300x300 → 300x225
-      await check('bliss-medium-300w.jpg', 300, 225)
+      await check('bliss-medium.jpg', 300, 225)
 
       // Width only: 4400x3300 → 768x576
-      await check('bliss-medium_large-768w.jpg', 768, 576)
+      await check('bliss-medium_large.jpg', 768, 576)
 
       // Soft crop: 4400x3300 into 1024x1024 → 1024x768
-      await check('bliss-large-1024w.jpg', 1024, 768)
+      await check('bliss-large.jpg', 1024, 768)
     })
   })
 
@@ -275,7 +275,7 @@ describe('bliss.jpg — comprehensive real image test', () => {
       await processor.processAll({ force: true })
 
       const files = listOutputFiles()
-      expect(files).toContain('bliss-thumb-150w.jpg')
+      expect(files).toContain('bliss-thumb.jpg')
       expect(files).toContain('bliss-640w.jpg')
       expect(files).toContain('bliss-1024w.jpg')
       expect(files.filter(f => f.startsWith('bliss-'))).toHaveLength(3)
@@ -296,8 +296,8 @@ describe('bliss.jpg — comprehensive real image test', () => {
       await processor.processAll({ force: true })
 
       const files = listOutputFiles()
-      expect(files).toContain('bliss-medium-300w.webp')
-      expect(files).not.toContain('bliss-medium-300w.jpg')
+      expect(files).toContain('bliss-medium.webp')
+      expect(files).not.toContain('bliss-medium.jpg')
     })
   })
 
@@ -315,9 +315,9 @@ describe('bliss.jpg — comprehensive real image test', () => {
       await processor.processAll({ force: true })
 
       const files = listOutputFiles()
-      expect(files).toContain('bliss-medium-300w.avif')
+      expect(files).toContain('bliss-medium.avif')
       expect(files).toContain('bliss.avif')
-      expect(files).not.toContain('bliss-medium-300w.jpg')
+      expect(files).not.toContain('bliss-medium.jpg')
     }, 15000)
   })
 
@@ -340,14 +340,14 @@ describe('bliss.jpg — comprehensive real image test', () => {
       const files = listOutputFiles()
 
       // medium: webp + avif = 2 files (no base jpg)
-      expect(files).toContain('bliss-medium-300w.webp')
-      expect(files).toContain('bliss-medium-300w.avif')
-      expect(files).not.toContain('bliss-medium-300w.jpg')
+      expect(files).toContain('bliss-medium.webp')
+      expect(files).toContain('bliss-medium.avif')
+      expect(files).not.toContain('bliss-medium.jpg')
 
       // large: webp + avif = 2 files
-      expect(files).toContain('bliss-large-1024w.webp')
-      expect(files).toContain('bliss-large-1024w.avif')
-      expect(files).not.toContain('bliss-large-1024w.jpg')
+      expect(files).toContain('bliss-large.webp')
+      expect(files).toContain('bliss-large.avif')
+      expect(files).not.toContain('bliss-large.jpg')
 
       // Total: 2 sizes × 2 formats = 4 sized variants
       expect(files.filter(f => f.startsWith('bliss-'))).toHaveLength(4)
@@ -372,7 +372,7 @@ describe('bliss.jpg — comprehensive real image test', () => {
       await processor.processAll({ force: true })
 
       const files = listOutputFiles()
-      const blissFiles = files.filter(f => f.startsWith('bliss-medium-'))
+      const blissFiles = files.filter(f => f.startsWith('bliss-medium.'))
       // Smart should produce exactly 1 file (webp or jpg)
       expect(blissFiles).toHaveLength(1)
       expect(blissFiles[0]).toMatch(/\.(webp|jpg)$/)
@@ -391,10 +391,10 @@ describe('bliss.jpg — comprehensive real image test', () => {
       await processor.processAll({ force: true })
 
       const files = listOutputFiles()
-      const blissFiles = files.filter(f => f.startsWith('bliss-medium-'))
+      const blissFiles = files.filter(f => f.startsWith('bliss-medium.'))
       // Should have avif + smart pick (webp or jpg) = 2 files
       expect(blissFiles).toHaveLength(2)
-      expect(files).toContain('bliss-medium-300w.avif')
+      expect(files).toContain('bliss-medium.avif')
       const other = blissFiles.find(f => !f.endsWith('.avif'))
       expect(other).toMatch(/\.(webp|jpg)$/)
 
@@ -416,7 +416,7 @@ describe('bliss.jpg — comprehensive real image test', () => {
 
       cleanup(TEST_OUTPUT)
       await processorHigh.processAll({ force: true })
-      const highFile = listOutputFiles().find(f => f.startsWith('bliss-q-'))
+      const highFile = listOutputFiles().find(f => f.startsWith('bliss-q.'))
       const highSize = fs.statSync(path.join(TEST_OUTPUT, highFile)).size
 
       // Low quality run
@@ -430,7 +430,7 @@ describe('bliss.jpg — comprehensive real image test', () => {
 
       cleanup(TEST_OUTPUT)
       await processorLow.processAll({ force: true })
-      const lowFile = listOutputFiles().find(f => f.startsWith('bliss-q-'))
+      const lowFile = listOutputFiles().find(f => f.startsWith('bliss-q.'))
       const lowSize = fs.statSync(path.join(TEST_OUTPUT, lowFile)).size
 
       expect(lowSize).toBeLessThan(highSize)
@@ -450,11 +450,11 @@ describe('bliss.jpg — comprehensive real image test', () => {
       await processor.processAll({ force: true })
 
       // Root variant
-      expect(listOutputFiles()).toContain('bliss-medium-300w.jpg')
+      expect(listOutputFiles()).toContain('bliss-medium.jpg')
 
       // Gallery variant
       expect(fs.existsSync(path.join(TEST_OUTPUT, 'gallery'))).toBe(true)
-      expect(listOutputFiles('gallery')).toContain('bliss-medium-300w.jpg')
+      expect(listOutputFiles('gallery')).toContain('bliss-medium.jpg')
     })
   })
 
@@ -474,11 +474,13 @@ describe('bliss.jpg — comprehensive real image test', () => {
       await processor.processAll({ force: true })
 
       const files = listOutputFiles()
-      expect(files.some(f => f.startsWith('bliss-ok-'))).toBe(true)
-      expect(files.some(f => f.startsWith('bliss-toobig-'))).toBe(false)
+      // Width-only soft crops still can't upscale: 'ok' (2000 ≤ 4400) is produced,
+      // 'toobig' (5000 > 4400) is dropped.
+      expect(files.some(f => f.startsWith('bliss-ok'))).toBe(true)
+      expect(files.some(f => f.startsWith('bliss-toobig'))).toBe(false)
     })
 
-    it('should skip hard crop sizes when source is smaller in either dimension', async() => {
+    it('should scale hard crops down to fit when source is smaller in either dimension', async() => {
       const processor = new ImageProcessor({
         in: TEST_INPUT,
         out: TEST_OUTPUT,
@@ -493,10 +495,15 @@ describe('bliss.jpg — comprehensive real image test', () => {
       cleanup(TEST_OUTPUT)
       await processor.processAll({ force: true })
 
-      const files = listOutputFiles()
-      expect(files.some(f => f.startsWith('bliss-ok-'))).toBe(true)
-      expect(files.some(f => f.startsWith('bliss-toowide-'))).toBe(false)
-      expect(files.some(f => f.startsWith('bliss-tootall-'))).toBe(false)
+      // bliss is 4400x3300. Oversized crops are no longer dropped — they scale
+      // down proportionally to the largest box that fits, keeping the crop ratio.
+      const dims = async(name) => {
+        const m = await sharp(path.join(TEST_OUTPUT, `bliss-${name}.jpg`)).metadata()
+        return [m.width, m.height]
+      }
+      expect(await dims('ok')).toEqual([2000, 2000])       // fits as-is
+      expect(await dims('toowide')).toEqual([4400, 880])   // 5:1, width-limited
+      expect(await dims('tootall')).toEqual([660, 3300])   // 1:5, height-limited
     })
   })
 
@@ -626,22 +633,28 @@ describe('bliss.jpg — comprehensive real image test', () => {
       cleanup(TEST_OUTPUT)
       await processor.processAll({ force: true })
 
-      const poopsRegex = /^(.+)-(\d+)w\.([a-z0-9]+)$/
-      const originalRegex = /^(.+)\.([a-z0-9]+)$/
+      // Four valid output shapes, all parseable against the known source name:
+      //   bliss.ext                  — original / conversion-only
+      //   bliss-768w.ext             — unnamed width variant
+      //   bliss-thumbnail.ext        — named group main (largest, no width)
+      //   bliss-thumbnail-100w.ext   — named group sibling
+      const width = /^bliss-(\d+)w\.[a-z0-9]+$/
+      const namedMain = /^bliss-[a-z0-9_]+\.[a-z0-9]+$/
+      const namedSibling = /^bliss-[a-z0-9_]+-(\d+)w\.[a-z0-9]+$/
+      const original = /^bliss\.[a-z0-9]+$/
       const files = listOutputFiles()
 
       for (const file of files) {
-        // Skip cache files
         if (file.startsWith('.')) continue
-        // Originals (non-resized) have no -NNNw suffix
-        if (!file.includes('-')) {
-          expect(file).toMatch(originalRegex)
-          continue
-        }
-        const match = file.match(poopsRegex)
-        expect(match).not.toBeNull()
-        expect(parseInt(match[2], 10)).toBeGreaterThan(0)
+        expect(
+          original.test(file) || width.test(file) || namedMain.test(file) || namedSibling.test(file)
+        ).toBe(true)
       }
+
+      // This config yields exactly: originals, one unnamed width, two named mains
+      expect(files).toContain('bliss-768w.webp')
+      expect(files).toContain('bliss-thumbnail.webp')
+      expect(files).toContain('bliss-medium.webp')
     }, 30000)
   })
 
@@ -741,18 +754,18 @@ describe('bliss.jpg — comprehensive real image test', () => {
       expect(files).toContain('bliss.avif')
 
       // Verify each size produced webp + avif (no jpg — format list is explicit)
-      expect(files).toContain('bliss-thumbnail-150w.webp')
-      expect(files).toContain('bliss-thumbnail-150w.avif')
-      expect(files).toContain('bliss-medium-300w.webp')
-      expect(files).toContain('bliss-medium-300w.avif')
-      expect(files).toContain('bliss-medium_large-768w.webp')
-      expect(files).toContain('bliss-medium_large-768w.avif')
-      expect(files).toContain('bliss-large-1024w.webp')
-      expect(files).toContain('bliss-large-1024w.avif')
-      expect(files).toContain('bliss-hero-1920w.webp')
-      expect(files).toContain('bliss-hero-1920w.avif')
-      expect(files).toContain('bliss-card-400w.webp')
-      expect(files).toContain('bliss-card-400w.avif')
+      expect(files).toContain('bliss-thumbnail.webp')
+      expect(files).toContain('bliss-thumbnail.avif')
+      expect(files).toContain('bliss-medium.webp')
+      expect(files).toContain('bliss-medium.avif')
+      expect(files).toContain('bliss-medium_large.webp')
+      expect(files).toContain('bliss-medium_large.avif')
+      expect(files).toContain('bliss-large.webp')
+      expect(files).toContain('bliss-large.avif')
+      expect(files).toContain('bliss-hero.webp')
+      expect(files).toContain('bliss-hero.avif')
+      expect(files).toContain('bliss-card.webp')
+      expect(files).toContain('bliss-card.avif')
 
       // No jpg files
       expect(files.filter(f => f.endsWith('.jpg'))).toHaveLength(0)
@@ -764,12 +777,12 @@ describe('bliss.jpg — comprehensive real image test', () => {
         if (expectedH) expect(meta.height).toBe(expectedH)
       }
 
-      await check('bliss-thumbnail-150w.webp', 150, 150)     // hard crop
-      await check('bliss-medium-300w.webp', 300, 225)         // soft crop 4:3
-      await check('bliss-medium_large-768w.webp', 768, 576)   // width-only 4:3
-      await check('bliss-large-1024w.webp', 1024, 768)        // soft crop 4:3
-      await check('bliss-hero-1920w.webp', 1920, 600)         // anchor crop
-      await check('bliss-card-400w.webp', 400, 300)           // anchor crop
+      await check('bliss-thumbnail.webp', 150, 150)     // hard crop
+      await check('bliss-medium.webp', 300, 225)         // soft crop 4:3
+      await check('bliss-medium_large.webp', 768, 576)   // width-only 4:3
+      await check('bliss-large.webp', 1024, 768)        // soft crop 4:3
+      await check('bliss-hero.webp', 1920, 600)         // anchor crop
+      await check('bliss-card.webp', 400, 300)           // anchor crop
     }, 30000)
   })
 })

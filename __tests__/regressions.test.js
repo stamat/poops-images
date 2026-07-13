@@ -130,8 +130,9 @@ describe('resizeFirst — no upscaling past the base (README: "Images are never 
     await processor.processAll({ force: true })
 
     const files = outputs()
-    // Control: original pipeline is unaffected by resizeFirst — 800x600 from 4400x3300 is legit
-    expect(files).toContain('bliss-big-800w.jpg')
+    // Control: original pipeline is unaffected by resizeFirst — 800x600 from 4400x3300 is legit.
+    // `big` is the sole (largest) member of its named group, so it drops the width suffix.
+    expect(files).toContain('bliss-big.jpg')
 
     // Preprocessed variants come from a 400x300 base — none may exceed it
     const grayFiles = files.filter(f => f.includes('-gray-'))

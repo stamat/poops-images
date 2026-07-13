@@ -115,7 +115,7 @@ describe('ImageProcessor', () => {
       in: TEST_INPUT,
       out: TEST_OUTPUT,
       sizes: [
-        { name: 'medium', width: 300, height: 300 }
+        { width: 300 }
       ],
     })
 
@@ -130,6 +130,47 @@ describe('ImageProcessor', () => {
       const match = variant.match(pattern)
       expect(match).not.toBeNull()
     }
+  })
+
+  it('names named-size variants: largest of a group drops the width suffix, siblings keep it', async() => {
+    const processor = new ImageProcessor({
+      in: TEST_INPUT,
+      out: TEST_OUTPUT,
+      sizes: [
+        { name: 'thumb', width: 150, height: 150, crop: true },
+        { name: 'thumb', width: 100, height: 100, crop: true }
+      ],
+    })
+
+    cleanup(TEST_OUTPUT)
+    await processor.processAll({ force: true })
+
+    const files = fs.readdirSync(TEST_OUTPUT)
+    // photo.jpg is 2000x1500 — both thumbs fit; largest (150) is the "main"
+    expect(files).toContain('photo-thumb.jpg')
+    expect(files).toContain('photo-thumb-100w.jpg')
+    expect(files).not.toContain('photo-thumb-150w.jpg')
+
+    const main = await sharp(path.join(TEST_OUTPUT, 'photo-thumb.jpg')).metadata()
+    expect([main.width, main.height]).toEqual([150, 150])
+  })
+
+  it('scales an oversized crop down to the largest box that fits instead of dropping it', async() => {
+    const processor = new ImageProcessor({
+      in: TEST_INPUT,
+      out: TEST_OUTPUT,
+      sizes: [
+        { name: 'square', width: 4000, height: 4000, crop: true }
+      ],
+    })
+
+    cleanup(TEST_OUTPUT)
+    await processor.processAll({ force: true })
+
+    // photo.jpg is 2000x1500 — a 4000x4000 crop can't upscale, so it becomes the
+    // largest square that fits: 1500x1500 (limited by height).
+    const main = await sharp(path.join(TEST_OUTPUT, 'photo-square.jpg')).metadata()
+    expect([main.width, main.height]).toEqual([1500, 1500])
   })
 
   it('should preserve directory structure', async() => {
@@ -297,19 +338,19 @@ describe('ImageProcessor', () => {
       in: TEST_INPUT,
       out: TEST_OUTPUT,
       sizes: [
-        { name: 'medium', width: 300, height: 300 }
+        { width: 300 }
       ],
     })
 
     cleanup(TEST_OUTPUT)
     await processor.processAll({ force: true })
 
-    // gallery/landscape.jpg is 1600x900, soft crop to 300x300 → 300x169
+    // gallery/landscape.jpg is 1600x900, fit inside 300 → 300x169
     const galleryFiles = fs.readdirSync(path.join(TEST_OUTPUT, 'gallery'))
-    const variant = galleryFiles.find(f => f.startsWith('landscape-'))
+    const variant = galleryFiles.find(f => /^landscape-\d+w\.jpg$/.test(f))
     expect(variant).toBeDefined()
 
-    const match = variant.match(/^landscape-medium-(\d+)w\.jpg$/)
+    const match = variant.match(/^landscape-(\d+)w\.jpg$/)
     expect(match).not.toBeNull()
     expect(parseInt(match[1], 10)).toBe(300)
   })

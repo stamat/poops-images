@@ -243,11 +243,11 @@ describe('ImageProcessor with preprocessors', () => {
 
     // Original pipeline outputs
     expect(files).toContain('photo.jpg')
-    expect(files.some(f => f.match(/^photo-small-300w\.jpg$/))).toBe(true)
+    expect(files).toContain('photo-small.jpg')
 
     // Preprocessed outputs
     expect(files).toContain('photo-blurred.jpg')
-    expect(files.some(f => f.match(/^photo-blurred-small-300w\.jpg$/))).toBe(true)
+    expect(files).toContain('photo-blurred-small.jpg')
   })
 
   it('should produce different pixel data for preprocessed variants', async () => {
@@ -316,7 +316,7 @@ describe('ImageProcessor with preprocessors', () => {
     // Preprocessed should NOT have passthrough (skipOriginal)
     expect(files).not.toContain('photo-blurred.jpg')
     // But should have the sized variant
-    expect(files.some(f => f.match(/^photo-blurred-small-300w\.jpg$/))).toBe(true)
+    expect(files).toContain('photo-blurred-small.jpg')
   })
 
   it('should respect preprocessor sizes override', async () => {
@@ -343,8 +343,8 @@ describe('ImageProcessor with preprocessors', () => {
     const files = fs.readdirSync(TEST_OUTPUT)
 
     // Original pipeline should have both sizes
-    expect(files.some(f => f.match(/^photo-small-300w\.jpg$/))).toBe(true)
-    expect(files.some(f => f.match(/^photo-medium-600w\.jpg$/))).toBe(true)
+    expect(files).toContain('photo-small.jpg')
+    expect(files).toContain('photo-medium.jpg')
 
     // LQIP should only have the 32w variant
     const lqipFiles = files.filter(f => f.startsWith('photo-lqip'))
