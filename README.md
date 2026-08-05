@@ -123,6 +123,39 @@ The config file is resolved in order:
 3. `images` key inside `poops.json`
 4. `images` key inside `💩.json`
 
+#### Editor completion
+
+Most of this config fails quietly rather than loudly. A misspelt key is spread into the config and ignored — `skipOriginals` never skips anything, and nothing says so. A missing operation parameter is worse: `{ "type": "blur" }` validates fine at load and throws mid-pipeline, per image, once the run is already going.
+
+Point `$schema` at the shipped [JSON Schema](https://json-schema.org) and the editor catches both as you type:
+
+```json
+{
+  "$schema": "./node_modules/poops-images/schema/poops-images.schema.json",
+  "in": "src/images",
+  "out": "dist/static/images"
+}
+```
+
+Or at the copy on GitHub, which needs nothing installed — it tracks `main`, so it describes the latest release rather than the version you have pinned:
+
+```
+https://raw.githubusercontent.com/stamat/poops-images/main/schema/poops-images.schema.json
+```
+
+It covers the whole config, so it fits `poops-images.json` directly. Inside a `poops.json` the same object is the `images` value — [Poops' own schema](https://stamat.info/poops/poops.schema.json) describes that key loosely, and a local file gets you both, checked properly:
+
+```json
+{
+  "allOf": [{ "$ref": "https://stamat.info/poops/poops.schema.json" }],
+  "properties": {
+    "images": { "$ref": "https://raw.githubusercontent.com/stamat/poops-images/main/schema/poops-images.schema.json" }
+  }
+}
+```
+
+A test keeps the schema honest against `validateConfig`: everything the schema accepts, the validator accepts. It is stricter in one direction on purpose — the validator ignores unknown keys, and the schema flags them, which is the entire point.
+
 #### Full config example
 
 ```json

@@ -1,0 +1,272 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/stamat/poops-images/main/schema/poops-images.schema.json",
+  "title": "poops-images configuration",
+  "description": "Responsive image processing — resize, convert, crop, EXIF. This is the whole of a poops-images.json, and also the value of the `images` key in a poops.json. https://github.com/stamat/poops-images",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "URL or path of this schema. Ignored by poops-images; editors read it for completion and validation."
+    },
+    "in": { "type": "string", "description": "Source directory.", "default": "." },
+    "out": {
+      "type": "string",
+      "description": "Output directory. Keep it out of `in` — and, under Poops, outside the watched sources, or generated variants retrigger the build.",
+      "default": "."
+    },
+    "sizes": {
+      "type": "array",
+      "description": "Variants to generate. Left empty, nothing is resized and the run is a format conversion.",
+      "items": { "$ref": "#/definitions/size" },
+      "default": []
+    },
+    "format": {
+      "description": "Output formats. `false` normalises to a web-ready format, \"smart\" keeps whichever of jpg and webp came out smaller, or name the formats yourself.",
+      "oneOf": [
+        { "type": "boolean", "enum": [false] },
+        { "$ref": "#/definitions/formatName" },
+        { "type": "array", "items": { "$ref": "#/definitions/formatName" }, "minItems": 1 }
+      ],
+      "default": false
+    },
+    "quality": {
+      "description": "One number for every format, or a number per format. 1–100.",
+      "oneOf": [
+        { "type": "integer", "minimum": 1, "maximum": 100 },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "jpg": { "type": "integer", "minimum": 1, "maximum": 100, "default": 82 },
+            "jpeg": { "type": "integer", "minimum": 1, "maximum": 100 },
+            "webp": { "type": "integer", "minimum": 1, "maximum": 100, "default": 80 },
+            "avif": { "type": "integer", "minimum": 1, "maximum": 100, "default": 60 },
+            "png": { "type": "integer", "minimum": 1, "maximum": 100, "default": 90 }
+          }
+        }
+      ]
+    },
+    "skipOriginal": {
+      "type": "boolean",
+      "description": "Drop the compressed original, keeping only the resized variants.",
+      "default": false
+    },
+    "include": {
+      "type": "string",
+      "description": "Glob of source images, relative to `in`.",
+      "default": "**/*.{jpg,jpeg,png,tiff,tif,webp,heic,heif}"
+    },
+    "exclude": {
+      "description": "Globs to skip.",
+      "oneOf": [
+        { "type": "string" },
+        { "type": "array", "items": { "type": "string" } }
+      ],
+      "default": []
+    },
+    "concurrency": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Images processed in parallel.",
+      "default": 4
+    },
+    "cache": {
+      "description": "`true` writes `.poops-images-cache.json` into the output directory, `false` disables caching, a string names the file (relative to the output directory, or absolute). The markup engines read this file, so turning it off costs Poops its image metadata.",
+      "oneOf": [
+        { "type": "boolean" },
+        { "type": "string" }
+      ],
+      "default": true
+    },
+    "preprocessors": {
+      "type": "array",
+      "description": "Extra renditions, each the source put through a chain of operations before the normal size and format pass.",
+      "items": { "$ref": "#/definitions/preprocessor" },
+      "default": []
+    },
+    "verbose": {
+      "type": "boolean",
+      "description": "Log every file instead of one summary at the end.",
+      "default": false
+    },
+    "configDir": {
+      "type": "string",
+      "description": "Base for resolving custom handlers and composite overlays. Defaults to the directory this config file sits in — set it only when that is not what you want."
+    }
+  },
+  "definitions": {
+    "formatName": {
+      "enum": ["jpg", "jpeg", "png", "webp", "avif", "smart"]
+    },
+
+    "size": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Mirrors WordPress's add_image_size(name, width, height, crop).",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Appended to the filename. Omit it and the variant is named by width alone. Among sizes sharing a name the largest drops its width suffix, so it reads as the canonical one."
+        },
+        "width": { "type": "integer", "minimum": 0, "description": "Target width in px. 0 scales by height alone.", "default": 0 },
+        "height": { "type": "integer", "minimum": 0, "description": "Target height in px. 0 scales by width alone.", "default": 0 },
+        "crop": { "$ref": "#/definitions/crop" }
+      }
+    },
+
+    "crop": {
+      "description": "`false` fits inside the box and never upscales, `true` covers it from the centre, and a [x, y] pair covers it from that anchor. A crop always produces output: an undersized source is scaled down to the largest box that fits rather than dropped.",
+      "default": false,
+      "oneOf": [
+        { "type": "boolean" },
+        {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": [
+            { "enum": ["left", "center", "right"] },
+            { "enum": ["top", "center", "bottom"] }
+          ]
+        }
+      ]
+    },
+
+    "preprocessor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "operations"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]+$",
+          "description": "Goes into the output filename. Letters, numbers, hyphens and underscores only, and it may not collide with a size name."
+        },
+        "operations": {
+          "type": "array",
+          "minItems": 1,
+          "description": "Applied in order.",
+          "items": { "$ref": "#/definitions/operation" }
+        },
+        "sizes": {
+          "type": "array",
+          "description": "Sizes for this rendition alone. Omit it to use the top-level `sizes`.",
+          "items": { "$ref": "#/definitions/size" }
+        },
+        "format": {
+          "description": "Overrides the top-level `format` for this rendition.",
+          "oneOf": [
+            { "type": "boolean", "enum": [false] },
+            { "$ref": "#/definitions/formatName" },
+            { "type": "array", "items": { "$ref": "#/definitions/formatName" }, "minItems": 1 }
+          ]
+        },
+        "quality": {
+          "description": "Overrides the top-level `quality` for this rendition.",
+          "oneOf": [
+            { "type": "integer", "minimum": 1, "maximum": 100 },
+            { "type": "object", "additionalProperties": { "type": "integer", "minimum": 1, "maximum": 100 } }
+          ]
+        },
+        "skipOriginal": { "type": "boolean", "description": "Overrides the top-level `skipOriginal` for this rendition." },
+        "svg": { "type": "boolean", "description": "Keep the SVG an operation produced, rather than only its raster.", "default": false },
+        "resizeFirst": {
+          "description": "Resize before the operations run instead of after — an operation whose cost or look depends on pixel dimensions (ascii, halftone) wants this. `true` uses the rendition's own sizes; an object resizes once to a fixed box first.",
+          "default": false,
+          "oneOf": [
+            { "type": "boolean" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "Needs a positive `width` or `height` — a box of zero is rejected, unlike a `sizes` entry where zero means \"do not resize\".",
+              "properties": {
+                "width": { "type": "integer", "minimum": 0 },
+                "height": { "type": "integer", "minimum": 0 },
+                "crop": { "$ref": "#/definitions/crop" }
+              },
+              "anyOf": [
+                { "required": ["width"], "properties": { "width": { "minimum": 1 } } },
+                { "required": ["height"], "properties": { "height": { "minimum": 1 } } }
+              ]
+            }
+          ]
+        }
+      }
+    },
+
+    "operation": {
+      "type": "object",
+      "required": ["type"],
+      "description": "A built-in operation, or the name of a custom handler — `handlers/<type>.js` next to this config, or a path to a module. Anything beside `type` is passed to it, which is why unknown keys are allowed here.",
+      "additionalProperties": true,
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Built in: blur, grayscale, sharpen, tint, modulate, negate, normalize, rotate, flip, flop, gamma, composite. Any other name is looked up as a custom handler.",
+          "examples": ["blur", "grayscale", "sharpen", "tint", "modulate", "negate", "normalize", "rotate", "flip", "flop", "gamma", "composite"]
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "type": { "const": "blur" } }, "required": ["type"] },
+          "then": {
+            "required": ["sigma"],
+            "properties": { "sigma": { "type": "number", "minimum": 0.3, "maximum": 1000, "description": "Blur radius." } }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "tint" } }, "required": ["type"] },
+          "then": {
+            "required": ["color"],
+            "properties": { "color": { "type": "string", "description": "Any colour sharp accepts — \"#43523d\", \"rgb(…)\", a named colour." } }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "rotate" } }, "required": ["type"] },
+          "then": {
+            "required": ["angle"],
+            "properties": { "angle": { "type": "number", "description": "Degrees clockwise." } }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "gamma" } }, "required": ["type"] },
+          "then": {
+            "required": ["value"],
+            "properties": { "value": { "type": "number" } }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "composite" } }, "required": ["type"] },
+          "then": {
+            "required": ["input"],
+            "properties": {
+              "input": { "type": "string", "description": "Overlay image, resolved against `configDir`. A missing file is an error, not a skip." },
+              "gravity": { "type": "string" },
+              "blend": { "type": "string" },
+              "top": { "type": "integer" },
+              "left": { "type": "integer" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "modulate" } }, "required": ["type"] },
+          "then": {
+            "properties": {
+              "brightness": { "type": "number" },
+              "saturation": { "type": "number" },
+              "hue": { "type": "number" },
+              "lightness": { "type": "number" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "sharpen" } }, "required": ["type"] },
+          "then": {
+            "properties": { "sigma": { "type": "number" } }
+          }
+        }
+      ]
+    }
+  }
+}
