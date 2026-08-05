@@ -16,6 +16,11 @@
   ],
   "author": "Stamat <@stamat> (http://stamat.info)",
   "homepage": "https://github.com/stamat/poops-images",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/stamat/poops-images.git"
+  },
+  "bugs": "https://github.com/stamat/poops-images/issues",
   "private": false,
   "keywords": [
     "image",

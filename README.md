@@ -905,6 +905,18 @@ If you deploy GitHub Pages, do not run `poops-images` in the GitHub Actions to w
 - **Preprocessors** — generate LQIP placeholders, grayscale hover variants, or watermarked copies alongside originals, all from config. No other tool has a built-in preprocessor pipeline.
 - **Standalone CLI + API** — works with any build system or none at all, unlike Eleventy-coupled or webpack-coupled alternatives.
 
+## Contributing
+
+[CONTRIBUTING.md](CONTRIBUTING.md) says what this project is for, what it
+refuses to become, and what a pull request needs. What changed and when is in
+[CHANGELOG.md](CHANGELOG.md).
+
+```bash
+script/bootstrap  # install
+script/test       # run the tests
+script/lint       # run the linters
+```
+
 ## License
 
 MIT

@@ -1,0 +1,15 @@
+#!/bin/bash
+#
+# Produce the artifacts the project ships.
+#
+# Nothing to produce: this is a CLI and a library published straight from
+# source — no bundler, no transpiler, and the `files` list in package.json is
+# what decides what ships. Kept as a no-op so CI and script/publish can call it
+# without knowing that.
+#
+# `npm run build` is a different thing entirely: it runs the tool itself over
+# the local scratch directories, which is a smoke test, not a build.
+
+set -euo pipefail
+
+exit 0

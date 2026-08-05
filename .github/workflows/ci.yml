@@ -2,35 +2,66 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
   pull_request:
+
+# This workflow only reads the repository; say so, and the token can do no more.
+permissions:
+  contents: read
+
+# A new push to the same branch or pull request supersedes the run in flight.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
     strategy:
+      fail-fast: false
+      # windows-latest is not decoration here: this tool builds output paths and
+      # crawls markdown, and both are where the separator and line-ending bugs
+      # live. They never reproduce on a Mac.
       matrix:
         os: [ubuntu-latest, windows-latest]
+        node: [22, 24]
     runs-on: ${{ matrix.os }}
     defaults:
       run:
-        # npm test uses POSIX env syntax (NODE_OPTIONS='...'), bash makes it work on Windows too
+        # script/* are bash; on windows-latest the default shell is PowerShell
         shell: bash
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: ${{ matrix.node }}
           cache: npm
-      - run: npm ci
-      - run: npm test
+
+      - name: Install dependencies
+        run: script/bootstrap
+
+      - name: Test
+        run: script/test
+
+      - name: Build
+        run: script/build
 
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
-      - run: npm ci
-      - run: npm run lint
+
+      - name: Install dependencies
+        run: script/bootstrap
+
+      - name: Lint
+        run: script/lint

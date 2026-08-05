@@ -1,0 +1,14 @@
+#!/bin/bash
+#
+# Write $1 into whatever file holds this project's version. The one script in
+# here that has to know the language — script/publish calls it if it exists, and
+# a project versioned only by its git tag can delete it.
+#
+# Commit nothing — script/publish stages and commits what you write.
+
+set -euo pipefail
+
+version="${1:-}"
+[ -n "$version" ] || { echo "usage: script/version <version>" >&2; exit 1; }
+
+npm version "$version" --no-git-tag-version --allow-same-version

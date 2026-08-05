@@ -1,7 +1,17 @@
-node_modules
+# OS
 .DS_Store
+Thumbs.db
+
+# Editors and tools
 .vscode
+.history
+.idea
 .claude
-dist
+
+node_modules
+
+# The local scratch pit: `npm run build` reads src/ and writes dist/ with
+# poops-images.json for a config. Yours to fill, nobody else's to see.
 src
+dist
 poops-images.json
