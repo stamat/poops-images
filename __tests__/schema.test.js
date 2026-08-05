@@ -52,7 +52,11 @@ describe('the published schema', () => {
   // The repo's own poops-images.json is gitignored, so the README is the richest
   // config that actually ships — and the one people copy out of.
   it('accepts every config example in the README', () => {
-    const source = fs.readFileSync(path.join(ROOT, 'README.md'), 'utf-8')
+    // Normalised on read: git checks the README out with CRLF on Windows, and a
+    // fence pattern anchored to \n then matches nothing at all. The count
+    // assertion below is what turned that into a failure rather than a test
+    // that silently checked zero examples.
+    const source = fs.readFileSync(path.join(ROOT, 'README.md'), 'utf-8').replace(/\r\n/g, '\n')
     // A preprocessor is documented on its own as well as inside a config, so a
     // block is checked against whichever of the two it is. Everything else under
     // a ```json fence — the cache file, EXIF output — has neither shape.
