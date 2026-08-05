@@ -2,7 +2,7 @@
 
 import fs from 'node:fs'
 import path from 'node:path'
-import { loadConfig, validateConfig } from './lib/config.js'
+import { loadConfig, mergeQuality } from './lib/config.js'
 import ImageProcessor from './lib/processor.js'
 import PrintStyle from 'printstyle'
 import Argoyle from 'argoyle'
@@ -163,20 +163,14 @@ try {
     if (cliQuality != null) raw.quality = cliQuality
     if (skipOriginal) raw.skipOriginal = true
     if (cliPreprocess) raw.preprocessors = [{ name: 'preprocessed', operations: cliPreprocess }]
-    config = validateConfig(raw)
+    config = raw
   } else {
     config = loadConfig(configPath)
     if (cliIn) config.in = cliIn
     if (cliOut) config.out = cliOut
     if (cliInclude) config.include = cliInclude
     if (cliFormat !== null) config.format = cliFormat
-    if (cliQuality != null) {
-      if (typeof cliQuality === 'number') {
-        config.quality = { jpg: cliQuality, webp: cliQuality, avif: cliQuality, png: cliQuality }
-      } else {
-        config.quality = { ...config.quality, ...cliQuality }
-      }
-    }
+    if (cliQuality != null) config.quality = mergeQuality(config.quality, cliQuality)
     if (skipOriginal) config.skipOriginal = true
     if (cliPreprocess) {
       config.preprocessors = config.preprocessors || []

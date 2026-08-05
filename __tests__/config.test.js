@@ -1,7 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals'
 import fs from 'node:fs'
+import os from 'node:os'
 import path from 'node:path'
-import { loadConfig, validateConfig, configHash } from '../lib/config.js'
+import { loadConfig, validateConfig, configHash, mergeQuality } from '../lib/config.js'
+import ImageProcessor from '../lib/processor.js'
 
 describe('validateConfig', () => {
   const minimalConfig = {
@@ -215,13 +217,23 @@ describe('loadConfig', () => {
     expect(result.in).toBe('from-poops-images')
   })
 
-  it('should return validated config with defaults applied', () => {
+  // loadConfig reads; the ImageProcessor constructor validates. Keeping the two
+  // apart is what makes a config validated exactly once on the way through,
+  // whether it arrived from a file, from the flags, or from a library caller.
+  it('reads the file without applying defaults, leaving that to validation', () => {
     fs.writeFileSync(path.join(LOAD_TMP, 'poops-images.json'), JSON.stringify(VALID_FILE_CONFIG))
 
     const result = loadConfig()
-    expect(result.concurrency).toBe(4)
-    expect(result.format).toBe(false)
-    expect(result.quality.jpg).toBe(82)
+    expect(result.concurrency).toBeUndefined()
+    expect(result.format).toBeUndefined()
+    expect(result.quality).toBeUndefined()
+    expect(validateConfig(result).quality.jpg).toBe(82)
+  })
+
+  it('records the directory the config came from, which only the load knows', () => {
+    fs.writeFileSync(path.join(LOAD_TMP, 'poops-images.json'), JSON.stringify(VALID_FILE_CONFIG))
+
+    expect(loadConfig().configDir).toBe(path.dirname(path.join(LOAD_TMP, 'poops-images.json')))
   })
 })
 
@@ -262,13 +274,39 @@ describe('unknown config keys', () => {
     expect(said.join('\n')).toContain('unknown key "widht" in sizes[0]')
   })
 
-  it('says it once for a config that passed through validateConfig on its way here', () => {
-    // The CLI loads, validates, then hands the result to ImageProcessor, which
-    // validates again — one typo, one warning.
-    const config = validateConfig({ ...base, quailty: 80 })
-    said.length = 0
-    validateConfig(config)
-    expect(said).toEqual([])
+  it('says it once on the way from a config file to a processor, that path validating once', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'poops-images-keys-'))
+    fs.writeFileSync(path.join(dir, 'poops-images.json'), JSON.stringify({ ...base, quailty: 80 }))
+    const originalCwd = process.cwd()
+    process.chdir(dir)
+    try {
+      new ImageProcessor(loadConfig()) // eslint-disable-line no-new
+    } finally {
+      process.chdir(originalCwd)
+      fs.rmSync(dir, { recursive: true, force: true })
+    }
+    expect(said.filter((message) => message.includes('quailty'))).toHaveLength(1)
+  })
+})
+
+// The config reaching this merge is raw now that loadConfig no longer validates,
+// so `"quality": 70` is still a number here and has to survive a flag that names
+// only one format.
+describe('mergeQuality', () => {
+  it('takes a bare --quality as the whole answer, defaults filling the formats in later', () => {
+    expect(mergeQuality({ jpg: 70 }, 60)).toBe(60)
+  })
+
+  it('keeps the number a config file gave every other format when one is named', () => {
+    expect(mergeQuality(70, { webp: 60 })).toEqual({ jpg: 70, webp: 60, avif: 70, png: 70 })
+  })
+
+  it('lays a named format over the ones a config file already spelled out', () => {
+    expect(mergeQuality({ jpg: 90, webp: 85 }, { webp: 60 })).toEqual({ jpg: 90, webp: 60 })
+  })
+
+  it('is the flag alone when the config said nothing about quality', () => {
+    expect(mergeQuality(undefined, { avif: 40 })).toEqual({ avif: 40 })
   })
 })
 
