@@ -34,7 +34,9 @@ On `script/publish`, `script/changelog` cuts this section into a released entry
 in the same commit as the version bump, and the entry becomes the body of the
 GitHub release verbatim.
 
-## [Unreleased] — the config file tells you when it is wrong
+## [Unreleased]
+
+## [1.3.0] - 2026-08-06 — the config file tells you when it is wrong
 
 A misspelt key was silently ignored: `"quailty": 60` meant the default quality,
 with nothing said about it, and the first sign was output that looked wrong.
