@@ -1,4 +1,4 @@
-# poops-images 💩📸
+# poops-images 💩📸 [![npm version](https://img.shields.io/npm/v/poops-images)](https://www.npmjs.com/package/poops-images) [![ci](https://img.shields.io/github/actions/workflow/status/stamat/poops-images/ci.yml?branch=main&label=ci)](https://github.com/stamat/poops-images/actions/workflows/ci.yml) [![license mit](https://img.shields.io/badge/license-MIT-green)](https://github.com/stamat/poops-images/blob/main/LICENSE)
 
 CLI tool for preparing images for the web.
 
