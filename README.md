@@ -123,11 +123,20 @@ The config file is resolved in order:
 3. `images` key inside `poops.json`
 4. `images` key inside `💩.json`
 
-#### Editor completion
+#### Key checking and editor completion
 
-Most of this config fails quietly rather than loudly. A misspelt key is spread into the config and ignored — `skipOriginals` never skips anything, and nothing says so. A missing operation parameter is worse: `{ "type": "blur" }` validates fine at load and throws mid-pipeline, per image, once the run is already going.
+Most of this config fails quietly rather than loudly. A misspelt key is spread into the config and ignored — `skipOriginals` never skips anything. A missing operation parameter is worse: `{ "type": "blur" }` validates fine at load and throws mid-pipeline, per image, once the run is already going.
 
-Point `$schema` at the shipped [JSON Schema](https://json-schema.org) and the editor catches both as you type:
+poops-images now names the misspelt ones when the config loads, against the schema it ships:
+
+```
+[info] unknown key "quailty" — ignored. Valid: $schema, in, out, sizes, format, quality, skipOriginal, include, exclude, concurrency, cache, preprocessors, verbose, configDir
+[info] unknown key "widht" in sizes[0] — ignored. Valid: name, width, height, crop
+```
+
+Key names only — a wrong *type* is caught by the checks that already throw, and a missing operation parameter is still the pipeline's to find. The same warnings appear when Poops runs poops-images, since both go through the same config path.
+
+Point `$schema` at the shipped [JSON Schema](https://json-schema.org) and the editor catches all of it as you type, before the run:
 
 ```json
 {

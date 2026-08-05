@@ -225,6 +225,53 @@ describe('loadConfig', () => {
   })
 })
 
+// A key poops-images does not read is read by nothing: `quailty` leaves the
+// default quality in place, `sizs` leaves you with no variants, and the only
+// sign is output that never appears. The schema this package ships says which
+// keys it owns, so validateConfig names the ones it does not.
+describe('unknown config keys', () => {
+  let said
+  let original
+
+  beforeEach(() => {
+    said = []
+    original = console.log
+    console.log = (message) => said.push(message)
+  })
+
+  afterEach(() => {
+    console.log = original
+  })
+
+  const base = { in: 'src', out: 'dist', sizes: [{ name: 'a', width: 100 }] }
+
+  it('says nothing about a config that keeps to the schema', () => {
+    validateConfig({ ...base })
+    expect(said).toEqual([])
+  })
+
+  it('names a misspelt key, and what belonged there', () => {
+    validateConfig({ ...base, quailty: 80 })
+    expect(said).toHaveLength(1)
+    expect(said[0]).toContain('unknown key "quailty"')
+    expect(said[0]).toContain('quality')
+  })
+
+  it('reaches a size, where a misspelt key costs the dimension it was meant to set', () => {
+    validateConfig({ ...base, sizes: [{ name: 'a', widht: 100 }] })
+    expect(said.join('\n')).toContain('unknown key "widht" in sizes[0]')
+  })
+
+  it('says it once for a config that passed through validateConfig on its way here', () => {
+    // The CLI loads, validates, then hands the result to ImageProcessor, which
+    // validates again — one typo, one warning.
+    const config = validateConfig({ ...base, quailty: 80 })
+    said.length = 0
+    validateConfig(config)
+    expect(said).toEqual([])
+  })
+})
+
 describe('configHash', () => {
   it('should return consistent hash for same config', () => {
     const config = validateConfig({
