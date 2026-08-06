@@ -228,7 +228,7 @@ A test keeps the schema honest against `validateConfig`: everything the schema a
 | `concurrency`  | `number`               | `4`                                             | Max parallel image operations                                                                                                                         |
 | `preprocessors`| `array`                | `[]`                                            | Preprocessor definitions (see [Preprocessors](#preprocessors) below)                                                                                  |
 | `cache`        | `true\|false\|string`  | `true`                                          | Cache behavior. `true` = default cache file in output dir, `false` = no cache, `"path"` = custom cache file path (relative to output dir or absolute) |
-| `verbose`      | `boolean`              | `false`                                         | Per-file progress logs. `false` = only the end-of-run summary and errors are printed (enable with CLI `--verbose`)                                      |
+| `verbose`      | `boolean`              | `false`                                         | Per-file progress logs. `false` = only the end-of-run summary, config warnings and errors are printed (enable with CLI `--verbose`)                    |
 
 ### Size definitions
 

@@ -113,26 +113,47 @@ describe('error counting and verbose gating', () => {
     expect(fs.existsSync(path.join(TEST_OUTPUT, 'photo-200w.jpg'))).toBe(true)
   })
 
-  it('suppresses per-file logs when verbose is false but keeps the summary', async() => {
+  async function createLoggingFixtures() {
     cleanup(TEST_INPUT)
     cleanup(TEST_OUTPUT)
     await createImage('ok.jpg')
+    // Opaque png triggers the "Opaque PNG → JPEG:" normalization notice
+    await sharp({ create: { width: 400, height: 300, channels: 3, background: { r: 50, g: 50, b: 50 } } })
+      .png().toFile(path.join(TEST_INPUT, 'opaque.png'))
+    fs.writeFileSync(path.join(TEST_INPUT, 'icon.svg'),
+      '<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4"><rect width="4" height="4"/></svg>')
+  }
 
+  async function collectLogs(verbose) {
     const lines = []
     const spy = jest.spyOn(console, 'log').mockImplementation((msg) => lines.push(String(msg)))
     try {
       const processor = new ImageProcessor({
-        in: TEST_INPUT, out: TEST_OUTPUT, sizes: [{ width: 200 }], cache: false, verbose: false
+        in: TEST_INPUT, out: TEST_OUTPUT, sizes: [{ width: 200 }], cache: false, verbose
       })
       await processor.processAll({ force: true })
     } finally {
       spy.mockRestore()
     }
+    return lines.join('\n')
+  }
 
-    const out = lines.join('\n')
+  it('suppresses per-file logs when verbose is false but keeps the summary', async() => {
+    await createLoggingFixtures()
+    const out = await collectLogs(false)
     expect(out).not.toMatch(/Processing:/)
     expect(out).not.toMatch(/Compiled:/)
+    expect(out).not.toMatch(/Minified:/)
+    expect(out).not.toMatch(/Opaque PNG/)
     expect(out).toMatch(/image\(s\)/) // summary line survives
+  })
+
+  it('verbose true still prints the per-file logs', async() => {
+    await createLoggingFixtures()
+    const out = await collectLogs(true)
+    expect(out).toMatch(/Compiled:/)
+    expect(out).toMatch(/Minified:/)
+    expect(out).toMatch(/Opaque PNG/)
   })
 })
 

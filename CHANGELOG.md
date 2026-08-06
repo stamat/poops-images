@@ -98,6 +98,9 @@ screens below the flag that needs it.
   in a form it never matched, and the include glob was not consulted at all. A
   watch event now runs through the same discovery predicate as a build, so a
   file is processed on change exactly when a build would have picked it up.
+- `verbose: false` means quiet. The SVG `Minified:` line and the format
+  normalization notices (`Opaque PNG → JPEG:` and friends) printed for every
+  file regardless of the setting; they are per-file progress and now obey it.
 - Editing an SVG under watch regenerates its preprocessor variants. Watch mode
   used to only re-minify the SVG, leaving variants from `"svg": true`
   preprocessors stale until the next full build; both modes now share one SVG

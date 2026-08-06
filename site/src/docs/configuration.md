@@ -148,4 +148,4 @@ unknown keys, and the schema flags them, which is the entire point.
 | `concurrency` | `number` | `4` | Max parallel image operations |
 | `preprocessors` | `array` | `[]` | [Preprocessor definitions](preprocessors) |
 | `cache` | `true\|false\|string` | `true` | [Cache behavior](caching). `true` = default cache file in output dir, `false` = no cache, `"path"` = custom cache file path (relative to output dir or absolute) |
-| `verbose` | `boolean` | `false` | Per-file progress logs. `false` = only the end-of-run summary and errors are printed (enable with CLI `--verbose`) |
+| `verbose` | `boolean` | `false` | Per-file progress logs. `false` = only the end-of-run summary, config warnings and errors are printed (enable with CLI `--verbose`) |
