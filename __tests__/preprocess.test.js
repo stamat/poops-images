@@ -47,10 +47,27 @@ describe('validatePreprocessor', () => {
       format: 'webp',
       quality: 50
     })
-    expect(result.sizes).toEqual([{ width: 32 }])
+    // Sizes come back in the same normalized shape as top-level sizes
+    expect(result.sizes).toEqual([{ name: '', width: 32, height: 0, crop: false }])
     expect(result.skipOriginal).toBe(true)
     expect(result.format).toBe('webp')
     expect(result.quality).toBe(50)
+  })
+
+  it('a bad crop in preprocessor sizes is rejected at config time, not at process time', () => {
+    expect(() => validatePreprocessor({
+      name: 'thumbs',
+      operations: [{ type: 'grayscale' }],
+      sizes: [{ width: 100, height: 100, crop: ['middle', 'top'] }]
+    })).toThrow(/crop x must be one of/)
+  })
+
+  it('preprocessor sizes must be an array when given', () => {
+    expect(() => validatePreprocessor({
+      name: 'thumbs',
+      operations: [{ type: 'grayscale' }],
+      sizes: 'nope'
+    })).toThrow(/"sizes" must be an array/)
   })
 
   it('should throw for missing name', () => {
