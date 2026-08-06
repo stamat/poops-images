@@ -74,6 +74,41 @@ describe('discovery under include', () => {
     expect(fs.existsSync(path.join(TEST_OUTPUT, 'anim.gif'))).toBe(false)
   })
 
+  it('an output directory nested under the input is never discovered as source', async() => {
+    const IN = path.join(FIXTURES_DIR, 'reingest-nested')
+    const OUT = path.join(IN, 'dist')
+    cleanup(IN)
+    fs.mkdirSync(IN, { recursive: true })
+    const jpg = await sharp({ create: { width: 100, height: 100, channels: 3, background: { r: 0, g: 0, b: 200 } } })
+      .jpeg().toBuffer()
+    fs.writeFileSync(path.join(IN, 'a.jpg'), jpg)
+
+    const config = { in: IN, out: OUT, sizes: [{ width: 50 }] }
+    await new ImageProcessor(config).processAll({ force: true })
+    await new ImageProcessor(config).processAll({ force: true })
+
+    // A second run re-ingesting dist/ would produce dist/dist
+    expect(fs.existsSync(path.join(OUT, 'dist'))).toBe(false)
+    cleanup(IN)
+  })
+
+  it('a recorded output beside its source is not re-ingested when in equals out', async() => {
+    const DIR = path.join(FIXTURES_DIR, 'reingest-flat')
+    cleanup(DIR)
+    fs.mkdirSync(DIR, { recursive: true })
+    const jpg = await sharp({ create: { width: 100, height: 100, channels: 3, background: { r: 0, g: 200, b: 200 } } })
+      .jpeg().toBuffer()
+    fs.writeFileSync(path.join(DIR, 'a.jpg'), jpg)
+
+    const config = { in: DIR, out: DIR, sizes: [{ width: 50 }], skipOriginal: true }
+    await new ImageProcessor(config).processAll({ force: true })
+    expect(fs.existsSync(path.join(DIR, 'a-50w.jpg'))).toBe(true)
+
+    await new ImageProcessor(config).processAll({ force: true })
+    expect(fs.existsSync(path.join(DIR, 'a-50w-50w.jpg'))).toBe(false)
+    cleanup(DIR)
+  })
+
   it('exclude applies to svg and gif, not only raster', async() => {
     const processor = new ImageProcessor({
       in: TEST_INPUT, out: TEST_OUTPUT, sizes: [{ width: 50 }], exclude: ['icon.svg', 'anim.gif']

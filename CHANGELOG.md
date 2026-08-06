@@ -78,6 +78,11 @@ screens below the flag that needs it.
 
 ### Fixed
 
+- The tool no longer eats its own output. With `out` inside `in` — say
+  `-i . -o dist` — every run re-ingested the previous run's variants, producing
+  `dist/dist/dist/a-100w-100w-100w.jpg` by the third build. The output subtree
+  is now excluded from discovery, and anything the cache records as a written
+  variant is dropped from the source list, in build and watch mode both.
 - Pointing at one file means one file. `--in photo.jpg` used to run the raster
   pipeline on that file and then minify every SVG and copy every GIF found
   beside it, recursively, because SVG and GIF discovery ignored `include`. All
