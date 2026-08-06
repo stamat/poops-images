@@ -57,6 +57,21 @@ describe('error counting and verbose gating', () => {
     expect(stats.processed).toBe(1) // the good image still went through
   })
 
+  it('an svg that svgo cannot parse is counted in stats.errors', async() => {
+    cleanup(TEST_INPUT)
+    cleanup(TEST_OUTPUT)
+    await createImage('ok.jpg')
+    fs.writeFileSync(path.join(TEST_INPUT, 'broken.svg'), 'this is <<< not an svg')
+
+    const processor = new ImageProcessor({
+      in: TEST_INPUT, out: TEST_OUTPUT, sizes: [{ width: 200 }], cache: false
+    })
+
+    const stats = await processor.processAll({ force: true })
+    expect(stats.errors).toBe(1)
+    expect(stats.processed).toBe(1)
+  })
+
   it('a truncated image fails alone — the rest of the build still completes', async() => {
     cleanup(TEST_INPUT)
     cleanup(TEST_OUTPUT)
@@ -164,9 +179,10 @@ describe('an output never overwrites its own source (in == out)', () => {
     fs.writeFileSync(path.join(DIR, 'icon.svg'), SVG)
 
     const processor = new ImageProcessor({ in: DIR, out: DIR, sizes: [], cache: false })
-    await processor.processAll({ force: true })
+    const stats = await processor.processAll({ force: true })
 
     expect(fs.readFileSync(path.join(DIR, 'icon.svg'), 'utf-8')).toBe(SVG)
+    expect(stats.errors).toBe(1)
   })
 
   it('an animated gif is not copied onto itself', async() => {

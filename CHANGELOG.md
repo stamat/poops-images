@@ -98,6 +98,10 @@ screens below the flag that needs it.
   in a form it never matched, and the include glob was not consulted at all. A
   watch event now runs through the same discovery predicate as a build, so a
   file is processed on change exactly when a build would have picked it up.
+- SVG failures count. An unreadable SVG or an SVGO parse error was logged but
+  left `stats.errors` at zero, so a build full of broken SVGs still reported
+  itself clean to any caller reading the stats. They now land in the same
+  error count as raster failures, in build and watch mode both.
 - One truncated image no longer kills the whole build. A source whose header
   reads fine but whose body fails to decode used to abort `processAll()` — the
   remaining images went unprocessed and the cache unsaved. It is now counted in
