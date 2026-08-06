@@ -93,6 +93,11 @@ screens below the flag that needs it.
   pipeline on that file and then minify every SVG and copy every GIF found
   beside it, recursively, because SVG and GIF discovery ignored `include`. All
   three pipelines now read the same `include` glob.
+- Watch mode obeys `include` and `exclude`. It used to process any supported
+  extension anywhere under `in` — the exclude globs were handed to the watcher
+  in a form it never matched, and the include glob was not consulted at all. A
+  watch event now runs through the same discovery predicate as a build, so a
+  file is processed on change exactly when a build would have picked it up.
 - One truncated image no longer kills the whole build. A source whose header
   reads fine but whose body fails to decode used to abort `processAll()` — the
   remaining images went unprocessed and the cache unsaved. It is now counted in
