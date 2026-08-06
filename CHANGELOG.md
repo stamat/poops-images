@@ -98,6 +98,9 @@ screens below the flag that needs it.
   in a form it never matched, and the include glob was not consulted at all. A
   watch event now runs through the same discovery predicate as a build, so a
   file is processed on change exactly when a build would have picked it up.
+- The custom-handler cache holds one entry per handler file instead of one per
+  edit, so a long watch session editing handlers no longer grows it without
+  bound. Edited handlers still reload on the next run.
 - Preprocessor `sizes` are validated like top-level `sizes`. A typo in a crop
   anchor — `"crop": ["middle", "top"]` — used to surface as a sharp error per
   image at process time; it is now one config error at startup.

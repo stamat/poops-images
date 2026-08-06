@@ -547,6 +547,10 @@ describe('custom handler operations', () => {
     expect(result.info.height).toBe(150)
   })
 
+  // Deliberately not covered: the edited-handler reload (mtime-keyed
+  // cache-busting import in loadHandler). Jest's ESM runtime caches dynamic
+  // import() by resolved path and ignores the ?v= query, so a test here would
+  // observe jest's module cache, not the code. Verified under plain node.
   it('should resolve short handler name to handlers/{name}.js', async () => {
     const inputPath = path.join(HANDLER_INPUT, 'red.jpg')
     // Pass CONFIG_DIR as configDir so it resolves to CONFIG_DIR/handlers/invert.js
