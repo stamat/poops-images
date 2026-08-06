@@ -70,6 +70,22 @@ describe('watch events pass through the same filter as build discovery', () => {
     expect(fs.existsSync(path.join(TEST_OUTPUT, 'photos', 'shot-50w.jpg'))).toBe(true)
   })
 
+  it('an svg edit under watch regenerates svg-preprocessor variants, same as a build', async() => {
+    const abs = path.join(TEST_INPUT, 'icon.svg')
+    fs.mkdirSync(TEST_INPUT, { recursive: true })
+    fs.writeFileSync(abs, '<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"><rect width="8" height="8" fill="blue"/></svg>')
+    const processor = new ImageProcessor({
+      in: TEST_INPUT,
+      out: TEST_OUTPUT,
+      sizes: [{ width: 50 }],
+      cache: false,
+      preprocessors: [{ name: 'gray', operations: [{ type: 'grayscale' }], svg: true }]
+    })
+    await drainEvent(processor, abs)
+    expect(fs.existsSync(path.join(TEST_OUTPUT, 'icon.svg'))).toBe(true)
+    expect(fs.existsSync(path.join(TEST_OUTPUT, 'icon-gray.png'))).toBe(true)
+  })
+
   it('an excluded svg is not minified on a watch event', async() => {
     const abs = path.join(TEST_INPUT, 'drafts', 'icon.svg')
     fs.mkdirSync(path.dirname(abs), { recursive: true })
