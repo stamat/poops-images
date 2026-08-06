@@ -34,7 +34,9 @@ On `script/publish`, `script/changelog` cuts this section into a released entry
 in the same commit as the version bump, and the entry becomes the body of the
 GitHub release verbatim.
 
-## [Unreleased] — the documentation is a site now
+## [Unreleased]
+
+## [1.4.0] - 2026-08-06 — the documentation is a site now
 
 A 900-line README is where a fact goes to hide. Everything was in it and nothing
 was findable: no search, no table of contents, and a crop anchor grid eleven
