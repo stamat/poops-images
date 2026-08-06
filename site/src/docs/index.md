@@ -31,7 +31,7 @@ responsive? You are responsible, right? Right?
 npm install poops-images
 ```
 
-Node ≥ 18. `sharp` is the one dependency with a native binary; if the install fails, that
+Node ≥ 20.9. `sharp` is the one dependency with a native binary; if the install fails, that
 is almost always what failed.
 
 ## What it does

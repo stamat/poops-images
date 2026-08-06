@@ -38,6 +38,9 @@ And let me ask you this: What happens when you have to create a `srcset`!? Make 
 npm install poops-images
 ```
 
+Node ≥ 20.9. `sharp` is the one dependency with a native binary; if the install fails, that
+is almost always what failed.
+
 ## CLI
 
 ### Quick examples

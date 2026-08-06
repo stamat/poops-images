@@ -53,6 +53,24 @@ screens below the flag that needs it.
   README counterpart, because it composes documented facts rather than adding
   any.
 
+### Security
+
+- `sharp` moved from `^0.33.0` to `^0.35.0`, which closes four libvips
+  vulnerabilities inherited by every 0.33 and 0.34 release
+  ([GHSA-f88m-g3jw-g9cj](https://github.com/advisories/GHSA-f88m-g3jw-g9cj):
+  CVE-2026-33327, CVE-2026-33328, CVE-2026-35590, CVE-2026-35591). There is no
+  patched 0.33 line, so the upgrade is the only fix.
+
+### Changed
+
+- **Node ≥ 20.9 is now the minimum**, because sharp 0.35 dropped Node 18. On
+  Node 18 the install now fails outright rather than half-working; `engines` in
+  `package.json` says so, so npm warns before anything is written.
+- AVIF output is not byte-for-byte what it was. sharp 0.35 retuned lossy AVIF
+  around SSIMULACRA2 quality metrics, so the same `quality` number lands on a
+  different file size — usually smaller. Nothing in the config changed; if you
+  have a size budget pinned to a byte count, re-measure it.
+
 ### Fixed
 
 - The `poops.json` example under **Poops Integration** in the README was missing

@@ -22,6 +22,9 @@
   },
   "bugs": "https://github.com/stamat/poops-images/issues",
   "private": false,
+  "engines": {
+    "node": ">=20.9.0"
+  },
   "keywords": [
     "image",
     "resize",
