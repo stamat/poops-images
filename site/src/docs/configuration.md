@@ -117,7 +117,7 @@ unknown keys, and the schema flags them, which is the entire point.
     "avif": 60,
     "png": 90
   },
-  "include": "**/*.{jpg,jpeg,png,tiff,tif,webp,heic,heif}",
+  "include": "**/*.{jpg,jpeg,png,tiff,tif,webp,heic,heif,svg,gif}",
   "exclude": [],
   "concurrency": 4,
   "skipOriginal": false,
@@ -143,7 +143,7 @@ unknown keys, and the schema flags them, which is the entire point.
 | `format` | `false\|string\|array` | `false` | [Output format(s)](formats). `false` = normalize to web-ready, `"smart"` = smallest of jpg/webp, or explicit format(s) like `"webp"` or `["webp", "avif"]` |
 | `quality` | `number\|object` | `{jpg: 82, webp: 80, avif: 60, png: 90}` | Quality 1-100 for all formats, or per-format object |
 | `skipOriginal` | `boolean` | `false` | Skip the original (non-resized) compressed image |
-| `include` | `string` | `"**/*.{jpg,jpeg,png,tiff,tif,webp,heic,heif}"` | Glob pattern for source images |
+| `include` | `string` | `"**/*.{jpg,jpeg,png,tiff,tif,webp,heic,heif,svg,gif}"` | Glob pattern for source images. Governs every pipeline — a narrowed include narrows SVG and GIF processing too |
 | `exclude` | `array` | `[]` | Glob patterns to exclude |
 | `concurrency` | `number` | `4` | Max parallel image operations |
 | `preprocessors` | `array` | `[]` | [Preprocessor definitions](preprocessors) |

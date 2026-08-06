@@ -63,6 +63,11 @@ screens below the flag that needs it.
 
 ### Changed
 
+- The default `include` glob now names `svg` and `gif` alongside the raster
+  formats, because `include` governs every pipeline. If your config sets a
+  custom `include` — say `"**/*.jpg"` — SVGs and GIFs are no longer processed
+  unless the glob covers them; add them to the pattern to keep the old
+  behavior.
 - **Node ≥ 20.9 is now the minimum**, because sharp 0.35 dropped Node 18. On
   Node 18 the install now fails outright rather than half-working; `engines` in
   `package.json` says so, so npm warns before anything is written.
@@ -73,6 +78,10 @@ screens below the flag that needs it.
 
 ### Fixed
 
+- Pointing at one file means one file. `--in photo.jpg` used to run the raster
+  pipeline on that file and then minify every SVG and copy every GIF found
+  beside it, recursively, because SVG and GIF discovery ignored `include`. All
+  three pipelines now read the same `include` glob.
 - One truncated image no longer kills the whole build. A source whose header
   reads fine but whose body fails to decode used to abort `processAll()` — the
   remaining images went unprocessed and the cache unsaved. It is now counted in

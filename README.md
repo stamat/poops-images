@@ -197,7 +197,7 @@ A test keeps the schema honest against `validateConfig`: everything the schema a
     "avif": 60,
     "png": 90
   },
-  "include": "**/*.{jpg,jpeg,png,tiff,tif,webp,heic,heif}",
+  "include": "**/*.{jpg,jpeg,png,tiff,tif,webp,heic,heif,svg,gif}",
   "exclude": [],
   "concurrency": 4,
   "skipOriginal": false,
@@ -223,7 +223,7 @@ A test keeps the schema honest against `validateConfig`: everything the schema a
 | `format`       | `false\|string\|array` | `false`                                         | Output format(s). `false` = normalize to web-ready, `"smart"` = smallest of jpg/webp, or explicit format(s) like `"webp"` or `["webp", "avif"]`       |
 | `quality`      | `number\|object`       | `{jpg: 82, webp: 80, avif: 60, png: 90}`        | Quality 1-100 for all formats, or per-format object                                                                                                   |
 | `skipOriginal` | `boolean`              | `false`                                         | Skip the original (non-resized) compressed image                                                                                                      |
-| `include`      | `string`               | `"**/*.{jpg,jpeg,png,tiff,tif,webp,heic,heif}"` | Glob pattern for source images                                                                                                                        |
+| `include`      | `string`               | `"**/*.{jpg,jpeg,png,tiff,tif,webp,heic,heif,svg,gif}"` | Glob pattern for source images. Governs every pipeline — a narrowed include narrows SVG and GIF processing too                                        |
 | `exclude`      | `array`                | `[]`                                            | Glob patterns to exclude                                                                                                                              |
 | `concurrency`  | `number`               | `4`                                             | Max parallel image operations                                                                                                                         |
 | `preprocessors`| `array`                | `[]`                                            | Preprocessor definitions (see [Preprocessors](#preprocessors) below)                                                                                  |
@@ -505,7 +505,7 @@ This data is available in the cache file for downstream tools (e.g. nunjucks ext
 
 ### SVG minification
 
-SVG files are automatically discovered and minified with [SVGO](https://github.com/svg/svgo) (multipass). They're copied to the output directory with the same directory structure. No resize variants are generated.
+SVG files matching `include` (the default covers `*.svg`) are minified with [SVGO](https://github.com/svg/svgo) (multipass). They're copied to the output directory with the same directory structure. No resize variants are generated.
 
 ```
 src/images/icons/logo.svg

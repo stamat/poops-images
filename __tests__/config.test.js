@@ -106,7 +106,7 @@ describe('validateConfig', () => {
 
   it('should keep default include pattern', () => {
     const result = validateConfig(minimalConfig)
-    expect(result.include).toBe('**/*.{jpg,jpeg,png,tiff,tif,webp,heic,heif}')
+    expect(result.include).toBe('**/*.{jpg,jpeg,png,tiff,tif,webp,heic,heif,svg,gif}')
   })
 
   it('should default cache to true', () => {

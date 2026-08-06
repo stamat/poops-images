@@ -77,7 +77,7 @@ Transparent images stay as PNG, or as webp/avif when `format` is set.
 
 ## SVG minification
 
-SVG files are discovered automatically and minified with
+SVG files matching `include` (the default covers `*.svg`) are minified with
 [SVGO](https://github.com/svg/svgo) (multipass). They are copied to the output directory
 with the same directory structure. No resize variants are generated.
 

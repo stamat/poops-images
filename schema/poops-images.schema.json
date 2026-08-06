@@ -55,8 +55,8 @@
     },
     "include": {
       "type": "string",
-      "description": "Glob of source images, relative to `in`.",
-      "default": "**/*.{jpg,jpeg,png,tiff,tif,webp,heic,heif}"
+      "description": "Glob of source images, relative to `in`. Governs every pipeline: files ending in .svg or .gif route to the SVG and GIF pipelines, the rest to raster.",
+      "default": "**/*.{jpg,jpeg,png,tiff,tif,webp,heic,heif,svg,gif}"
     },
     "exclude": {
       "description": "Globs to skip.",
