@@ -138,7 +138,7 @@ unknown keys, and the schema flags them, which is the entire point.
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
 | `in` | `string` | `"."` | Source directory |
-| `out` | `string` | `"."` | Output directory |
+| `out` | `string` | `"."` | Output directory. May equal `in`: an output that would land on its own source is refused and counted as an error, suffixed variants are written |
 | `sizes` | `array` | `[]` | [Size definitions](sizes). Empty = conversion-only |
 | `format` | `false\|string\|array` | `false` | [Output format(s)](formats). `false` = normalize to web-ready, `"smart"` = smallest of jpg/webp, or explicit format(s) like `"webp"` or `["webp", "avif"]` |
 | `quality` | `number\|object` | `{jpg: 82, webp: 80, avif: 60, png: 90}` | Quality 1-100 for all formats, or per-format object |

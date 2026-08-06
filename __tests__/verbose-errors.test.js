@@ -1,4 +1,5 @@
-// Covers error accounting (stats.errors) and verbose gating of per-file logs.
+// Covers error accounting (stats.errors), refusal to overwrite a source with
+// its own output, and verbose gating of per-file logs.
 // Deliberately not covered: write failures (EACCES/ENOSPC) — not portable to
 // simulate across the CI matrix; they route through the same containment as
 // decode failures.
@@ -117,5 +118,69 @@ describe('error counting and verbose gating', () => {
     expect(out).not.toMatch(/Processing:/)
     expect(out).not.toMatch(/Compiled:/)
     expect(out).toMatch(/image\(s\)/) // summary line survives
+  })
+})
+
+describe('an output never overwrites its own source (in == out)', () => {
+  const DIR = path.join(FIXTURES_DIR, 'inplace-input')
+  const SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10">\n  <rect width="10" height="10" fill="red"/>\n</svg>'
+
+  beforeAll(() => cleanup(DIR))
+  afterAll(() => cleanup(DIR))
+
+  it('a conversion-only variant landing on its source is refused and counted', async() => {
+    cleanup(DIR)
+    fs.mkdirSync(DIR, { recursive: true })
+    const jpg = await sharp({ create: { width: 400, height: 300, channels: 3, background: { r: 0, g: 100, b: 200 } } })
+      .jpeg({ quality: 90 }).toBuffer()
+    fs.writeFileSync(path.join(DIR, 'photo.jpg'), jpg)
+
+    const processor = new ImageProcessor({ in: DIR, out: DIR, sizes: [], cache: false })
+    const stats = await processor.processAll({ force: true })
+
+    // The source must be byte-for-byte what it was — every run recompressing
+    // it in place is compounding generation loss
+    expect(fs.readFileSync(path.join(DIR, 'photo.jpg')).equals(jpg)).toBe(true)
+    expect(stats.errors).toBe(1)
+  })
+
+  it('sized variants still get written next to the untouched source', async() => {
+    cleanup(DIR)
+    fs.mkdirSync(DIR, { recursive: true })
+    const jpg = await sharp({ create: { width: 400, height: 300, channels: 3, background: { r: 0, g: 100, b: 200 } } })
+      .jpeg({ quality: 90 }).toBuffer()
+    fs.writeFileSync(path.join(DIR, 'photo.jpg'), jpg)
+
+    const processor = new ImageProcessor({ in: DIR, out: DIR, sizes: [{ width: 200 }], cache: false })
+    await processor.processAll({ force: true })
+
+    expect(fs.readFileSync(path.join(DIR, 'photo.jpg')).equals(jpg)).toBe(true)
+    expect(fs.existsSync(path.join(DIR, 'photo-200w.jpg'))).toBe(true)
+  })
+
+  it('an svg is not minified over itself', async() => {
+    cleanup(DIR)
+    fs.mkdirSync(DIR, { recursive: true })
+    fs.writeFileSync(path.join(DIR, 'icon.svg'), SVG)
+
+    const processor = new ImageProcessor({ in: DIR, out: DIR, sizes: [], cache: false })
+    await processor.processAll({ force: true })
+
+    expect(fs.readFileSync(path.join(DIR, 'icon.svg'), 'utf-8')).toBe(SVG)
+  })
+
+  it('an animated gif is not copied onto itself', async() => {
+    cleanup(DIR)
+    fs.mkdirSync(DIR, { recursive: true })
+    const a = await sharp({ create: { width: 10, height: 10, channels: 3, background: { r: 200, g: 0, b: 0 } } }).png().toBuffer()
+    const b = await sharp({ create: { width: 10, height: 10, channels: 3, background: { r: 0, g: 200, b: 0 } } }).png().toBuffer()
+    const gif = await sharp([a, b], { join: { animated: true } }).gif().toBuffer()
+    fs.writeFileSync(path.join(DIR, 'anim.gif'), gif)
+
+    const processor = new ImageProcessor({ in: DIR, out: DIR, sizes: [], cache: false })
+    const stats = await processor.processAll({ force: true })
+
+    expect(fs.readFileSync(path.join(DIR, 'anim.gif')).equals(gif)).toBe(true)
+    expect(stats.errors).toBe(1)
   })
 })

@@ -78,6 +78,12 @@ screens below the flag that needs it.
 
 ### Fixed
 
+- An output never overwrites its own source. With `in` and `out` pointing at
+  the same directory — the default is both `"."` — a conversion-only variant,
+  a minified SVG or a copied GIF landed on the file it came from, and because
+  the cache kept the pre-write mtime, every run recompressed the previous
+  run's recompression. Such writes are now refused and counted as errors;
+  suffixed variants (`photo-300w.jpg`) are unaffected.
 - The tool no longer eats its own output. With `out` inside `in` — say
   `-i . -o dist` — every run re-ingested the previous run's variants, producing
   `dist/dist/dist/a-100w-100w-100w.jpg` by the third build. The output subtree
