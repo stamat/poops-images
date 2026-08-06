@@ -180,12 +180,14 @@ try {
   if (cliVerbose) config.verbose = true
   const processor = new ImageProcessor(config)
 
-  await processor.processAll({ force, dryRun })
+  const stats = await processor.processAll({ force, dryRun })
 
   if (watchMode) {
     processor.watch()
   } else {
-    process.exit(0)
+    // Per-file failures are contained and counted, not thrown — the exit code
+    // is how CI hears about them
+    process.exit(stats.errors > 0 ? 1 : 0)
   }
 } catch (err) {
   console.error(ps.paint(`{redBright.bold|[error]} ${err.message}`))

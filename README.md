@@ -94,6 +94,8 @@ Breaking CLI change:
 - Use `--verbose` to show per-file progress logs.
 - `-q` is now the short flag for `--quality`.
 
+The build exits `1` when any file failed to process (and says which on stderr), so CI catches corrupt sources; `0` otherwise.
+
 The first positional argument is treated as the input path:
 
 ```bash

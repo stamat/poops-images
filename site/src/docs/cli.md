@@ -50,6 +50,9 @@ npx poops-images -c my-config.json --out /tmp/resized   # config file + override
 - `--verbose` shows per-file progress logs.
 - `-q` is now the short flag for `--quality`.
 
+The build exits `1` when any file failed to process (and says which on stderr), so CI
+catches corrupt sources; `0` otherwise.
+
 > [!TIP]
 > `--dry-run` prints what would be written without writing it, and `--force` ignores the
 > [cache](caching) entirely. Reach for the pair when the output looks wrong and you want

@@ -98,6 +98,10 @@ screens below the flag that needs it.
   in a form it never matched, and the include glob was not consulted at all. A
   watch event now runs through the same discovery predicate as a build, so a
   file is processed on change exactly when a build would have picked it up.
+- The CLI exits `1` when any file failed to process. It used to exit `0` no
+  matter how many errors were logged, so a CI build over corrupt sources came
+  up green. A run that merely contains failures still completes — the exit
+  code is how CI hears about them.
 - `verbose: false` means quiet. The SVG `Minified:` line and the format
   normalization notices (`Opaque PNG → JPEG:` and friends) printed for every
   file regardless of the setting; they are per-file progress and now obey it.
