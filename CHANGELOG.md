@@ -73,6 +73,12 @@ screens below the flag that needs it.
 
 ### Fixed
 
+- One truncated image no longer kills the whole build. A source whose header
+  reads fine but whose body fails to decode used to abort `processAll()` — the
+  remaining images went unprocessed and the cache unsaved. It is now counted in
+  `stats.errors` like any other bad file, and a failed decode leaves the
+  previous run's outputs and cache entry for that file untouched instead of
+  sweeping them as stale.
 - The `poops.json` example under **Poops Integration** in the README was missing
   a comma between two size objects, so copying it out produced invalid JSON. The
   test that checks every README config example against the schema parses each
