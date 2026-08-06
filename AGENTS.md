@@ -14,6 +14,11 @@ script/lint      # run the linters (the authority; CI runs it)
 script/build     # a no-op — nothing is compiled, see the comment in it
 ```
 
+```bash
+npm run docs        # serve the docs site on :4041, watching site/src
+npm run docs:build  # build it once into site/dist
+```
+
 `npm run build` is not `script/build`: it runs the tool over the local scratch
 directories (`src/` → `dist/`, config in `poops-images.json`, all three ignored
 by git) as a smoke test.
@@ -27,18 +32,27 @@ by git) as a smoke test.
 | [schema/poops-images.schema.json](schema/poops-images.schema.json) | The config format. Shipped in the package; users point `$schema` at it. |
 | [handlers/](handlers/) | Example preprocessor handlers. **Not shipped** — they are what a user's own `handlers/*.js` looks like, and the README points at them. |
 | [__tests__/](__tests__/) | Jest, against real fixture images in `__tests__/fixtures/`. |
+| [site/src/](site/src/) | The docs site content — one markdown page per topic. Built by [poops.json](poops.json) into `site/dist`, which is gitignored and rebuilt in CI. |
 
 ## Documentation
 
-[README.md](README.md) is the documentation — there is no docs site and no
-generated API reference. Every option, every config key and every CLI flag is
-described there, and that is the only place it is described.
+Two surfaces, no generated API reference: [README.md](README.md) is what npm and
+GitHub show, and [site/src/](site/src/) is the same content split into pages,
+published to <https://stamat.info/poops-images/> by
+[pages.yml](.github/workflows/pages.yml).
 
 - **Document in the same change as the code.** A behavior change that ships
   undocumented is unfinished.
+- **Every fact on both surfaces.** A flag, a config key, a default, a behaviour:
+  it lands in the README *and* on the docs site, or it has drifted the day it
+  ships. The site may hold more than the README — `quick-examples` is
+  compositions of documented facts, not new ones — but never a fact of its own.
+  The schema test reads every ` ```json ` fence on both surfaces, so a config
+  example that stops validating fails CI wherever it lives; prose has no such
+  guard.
 - **Edit the section that already covers it.** Do not add new README sections,
-  summary files, or migration notes nobody asked for. A doc nobody asked for is
-  a doc nobody maintains.
+  new docs pages, summary files, or migration notes nobody asked for. A doc
+  nobody asked for is a doc nobody maintains.
 - **Write for the person using it**, not the person who wrote it: what it
   does, one example that runs, and the part that would otherwise surprise
   them.
@@ -69,7 +83,8 @@ described there, and that is the only place it is described.
   project; changing the `ImageProcessor` API; adding a dependency.
 - **Never:** weaken, skip, or delete a test to make it pass; bump the version
   or publish — a tag does that; commit anything from `src/`, `dist/` or
-  `poops-images.json`, which are the local scratch pit.
+  `poops-images.json`, which are the local scratch pit, or from `site/dist`,
+  which CI builds.
 
 ## Before adding a feature
 
@@ -88,10 +103,11 @@ Run this checklist before writing any code; stop at the first "no".
 
 ## Non-obvious rules
 
-- **A new config key touches three files**: `lib/config.js` reads it,
-  `schema/poops-images.schema.json` describes it, the README documents it. Miss
-  the schema and the loader reports the new key to the user as a typo, because
-  the unknown-key warning reads the schema to decide what is valid.
+- **A new config key touches four files**: `lib/config.js` reads it,
+  `schema/poops-images.schema.json` describes it, and the README plus
+  [site/src/docs/configuration.md](site/src/docs/configuration.md) document it.
+  Miss the schema and the loader reports the new key to the user as a typo,
+  because the unknown-key warning reads the schema to decide what is valid.
 - **Validation happens once, in the `ImageProcessor` constructor.** `loadConfig`
   reads and returns; it does not validate or apply defaults. Adding a second
   validation pass double-reports every stray key.

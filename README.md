@@ -2,6 +2,9 @@
 
 CLI tool for preparing images for the web.
 
+**[Documentation →](https://stamat.info/poops-images/)** — the same content as this file,
+split into pages with search and a table of contents.
+
 Features:
 
 - Compresses, generates size variants and crops
@@ -865,7 +868,7 @@ Instead of a separate `poops-images.json`, you can embed the config in your `poo
     "out": "dist/static/images",
     "sizes": [
       { "name": "thumb", "width": 300, "height": 300 },
-      { "width": 800 }
+      { "width": 800 },
       { "width": 1024 }
     ]
   }

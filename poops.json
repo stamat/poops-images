@@ -1,0 +1,62 @@
+{
+  "$schema": "./node_modules/poops/schema/poops.schema.json",
+  "styles": [{
+    "in": "node_modules/poops-docs-theme/scss/docs.scss",
+    "out": "site/dist/css/docs.css",
+    "options": {
+      "minify": true,
+      "justMinified": true
+    }
+  }],
+  "scripts": [{
+    "in": "node_modules/poops-docs-theme/src/docs.ts",
+    "out": "site/dist/js/docs.js",
+    "options": {
+      "minify": true,
+      "justMinified": true,
+      "format": "iife"
+    }
+  }],
+  "markup": {
+    "in": "site/src",
+    "out": "site/dist",
+    "options": {
+      "site": {
+        "title": "poops-images",
+        "brand": "poops-images",
+        "brandMark": "📸",
+        "description": "A CLI and library that prepares images for the web: resize, crop, convert, minify, cache.",
+        "url": "https://stamat.info/poops-images",
+        "lang": "en",
+        "repo": "https://github.com/stamat/poops-images",
+        "branch": "main",
+        "jsonld": { "@type": "TechArticle" },
+        "links": [
+          { "title": "Docs", "url": "docs/" },
+          { "title": "poops", "url": "https://stamat.info/poops" },
+          { "title": "Changelog", "url": "https://github.com/stamat/poops-images/releases" }
+        ],
+        "iconLinks": [
+          { "title": "npm", "url": "https://www.npmjs.com/package/poops-images", "icon": "npm" }
+        ]
+      },
+      "searchIndex": "search-index.json",
+      "sitemap": "sitemap.xml",
+      "robots": "robots.txt",
+      "llms": {
+        "out": "llms.txt",
+        "full": true
+      },
+      "nav": {
+        "out": "nav.json",
+        "root": "docs"
+      }
+    }
+  },
+  "serve": {
+    "port": 4041
+  },
+  "livereload": true,
+  "watch": ["site/src"],
+  "includePaths": ["node_modules"]
+}

@@ -49,34 +49,49 @@ describe('the published schema', () => {
     expect(orphaned).toEqual([])
   })
 
-  // The repo's own poops-images.json is gitignored, so the README is the richest
-  // config that actually ships — and the one people copy out of.
-  it('accepts every config example in the README', () => {
-    // Normalised on read: git checks the README out with CRLF on Windows, and a
-    // fence pattern anchored to \n then matches nothing at all. The count
-    // assertion below is what turned that into a failure rather than a test
-    // that silently checked zero examples.
-    const source = fs.readFileSync(path.join(ROOT, 'README.md'), 'utf-8').replace(/\r\n/g, '\n')
+  // The repo's own poops-images.json is gitignored, so the prose is the richest
+  // config that actually ships — and the one people copy out of. The docs site
+  // holds the same examples as the README; checking only one of the two is how
+  // the other rots.
+  it('every config example in the README and on the docs site is JSON, and JSON the schema accepts', () => {
+    const docsDir = path.join(ROOT, 'site/src')
+    const sources = ['README.md', ...fs.readdirSync(docsDir, { recursive: true })
+      .filter((entry) => entry.endsWith('.md'))
+      .map((entry) => path.join('site/src', entry))]
+    // Normalised on read: git checks these out with CRLF on Windows, and a fence
+    // pattern anchored to \n then matches nothing at all. The count assertion
+    // below is what turned that into a failure rather than a test that silently
+    // checked zero examples.
     // A preprocessor is documented on its own as well as inside a config, so a
     // block is checked against whichever of the two it is. Everything else under
     // a ```json fence — the cache file, EXIF output — has neither shape.
     const validatePreprocessorDef = ajv.compile({ ...schema.definitions.preprocessor, definitions: schema.definitions })
     const CONFIG_KEYS = ['in', 'out', 'sizes', 'preprocessors', 'format', 'quality']
     const examples = []
-    for (const match of source.matchAll(/```json\n([\s\S]*?)```/g)) {
-      let doc
-      try { doc = JSON.parse(match[1]) } catch { continue }
-      if (!doc || typeof doc !== 'object' || Array.isArray(doc)) continue
-      const isPreprocessor = 'operations' in doc
-      if (!isPreprocessor && !CONFIG_KEYS.some((key) => key in doc)) continue
-      examples.push({ line: source.slice(0, match.index).split('\n').length, doc, isPreprocessor })
+    const malformed = []
+    for (const file of sources) {
+      const source = fs.readFileSync(path.join(ROOT, file), 'utf-8').replace(/\r\n/g, '\n')
+      for (const match of source.matchAll(/```json\n([\s\S]*?)```/g)) {
+        const at = `${file}:${source.slice(0, match.index).split('\n').length}`
+        let doc
+        // A block that will not parse used to be skipped as "not a config", which
+        // is how a `poops.json` example missing a comma between two size objects
+        // sat in the README unnoticed: the reader copies it out and gets a syntax
+        // error the test never saw. Every documented JSON block is JSON.
+        try { doc = JSON.parse(match[1]) } catch (error) { malformed.push(`${at} — ${error.message}`); continue }
+        if (!doc || typeof doc !== 'object' || Array.isArray(doc)) continue
+        const isPreprocessor = 'operations' in doc
+        if (!isPreprocessor && !CONFIG_KEYS.some((key) => key in doc)) continue
+        examples.push({ at, doc, isPreprocessor })
+      }
     }
 
+    expect(malformed).toEqual([])
     expect(examples.length).toBeGreaterThan(3)
     const rejected = examples
       .filter(({ doc, isPreprocessor }) => !(isPreprocessor ? validatePreprocessorDef(doc) : accepts(doc)))
-      .map(({ line, isPreprocessor }) =>
-        `README.md:${line} — ${ajv.errorsText((isPreprocessor ? validatePreprocessorDef : validate).errors)}`)
+      .map(({ at, isPreprocessor }) =>
+        `${at} — ${ajv.errorsText((isPreprocessor ? validatePreprocessorDef : validate).errors)}`)
     expect(rejected).toEqual([])
   })
 

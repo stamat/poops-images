@@ -32,6 +32,16 @@ Trying it on real images takes a scratch pit that is not in git: `src/` for
 input, `dist/` for output, `poops-images.json` for the config, then
 `npm run build`. All three are ignored, so fill them with whatever you like.
 
+The docs site lives in [site/src/](site/src/) and is built with
+[Poops](https://github.com/stamat/poops) itself:
+
+```bash
+npm run docs        # serve on http://localhost:4041, watching site/src
+npm run docs:build  # build once into site/dist
+```
+
+Pushing to `main` publishes it to <https://stamat.info/poops-images/>.
+
 `sharp` is the one dependency with a native binary; if `script/bootstrap` fails,
 it is almost always that.
 
@@ -51,11 +61,14 @@ An input image that shows it beats both.
   [CHANGELOG.md](CHANGELOG.md) — that file explains the format.
 - **Keep the diff about one thing.** A rename bundled with a fix is two reviews
   wearing one hat.
-- **A new config key touches three files**, not one:
+- **A new config key touches four files**, not one:
   [lib/config.js](lib/config.js) to read it,
   [schema/poops-images.schema.json](schema/poops-images.schema.json) to describe
-  it, and the README to document it. The schema is what editors complete from,
-  and a key missing from it is reported to the user as a typo.
+  it, and both the README and
+  [site/src/docs/configuration.md](site/src/docs/configuration.md) to document
+  it. The schema is what editors complete from, and a key missing from it is
+  reported to the user as a typo. The README and the docs site hold the same
+  facts — landing in one and not the other is how the two drift apart.
 - **Agent-written code is welcome — you still own it.** It meets the same bar
   as handwritten code: tests, lint, CI green. You understand every line well
   enough to answer review questions; "the agent wrote it" is not an answer.

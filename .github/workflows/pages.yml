@@ -1,0 +1,54 @@
+name: Deploy docs site
+
+on:
+  push:
+    branches:
+      - main
+  # A docs-only fix should not wait for the next push to main.
+  workflow_dispatch:
+
+# Pages deployment needs to write pages and mint an OIDC token; nothing else.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deploy at a time, and never cancel one mid-flight — a half-published site
+# is worse than a stale one.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: script/bootstrap
+
+      # A project site is served from /<repo>/, not from /. Poops writes relative
+      # prefixes for assets either way; --base-url is what makes the absolute URLs
+      # in sitemap.xml and the og: tags point somewhere real.
+      - name: Build the docs site
+        run: npm run docs:build -- --base-url /${{ github.event.repository.name }}
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: ./site/dist
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

@@ -35,6 +35,8 @@
   ],
   "scripts": {
     "build": "node ./poops-images.js -b",
+    "docs": "poops",
+    "docs:build": "poops -b",
     "lint": "eslint ./poops-images.js ./lib/",
     "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js"
   },
@@ -53,6 +55,8 @@
     "ajv": "^8.20.0",
     "eslint": "^9.39.3",
     "jest": "^30.2.0",
-    "neostandard": "^0.12.2"
+    "neostandard": "^0.12.2",
+    "poops": "^2.1.0",
+    "poops-docs-theme": "^3.0.1"
   }
 }

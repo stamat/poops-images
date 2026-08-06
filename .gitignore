@@ -12,6 +12,11 @@ node_modules
 
 # The local scratch pit: `npm run build` reads src/ and writes dist/ with
 # poops-images.json for a config. Yours to fill, nobody else's to see.
-src
-dist
-poops-images.json
+# Anchored to the root: unanchored `src` and `dist` also swallowed site/src,
+# which is the documentation and belongs in git.
+/src
+/dist
+/poops-images.json
+
+# The docs site is built from site/src, in CI and locally alike.
+/site/dist

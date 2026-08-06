@@ -34,7 +34,32 @@ On `script/publish`, `script/changelog` cuts this section into a released entry
 in the same commit as the version bump, and the entry becomes the body of the
 GitHub release verbatim.
 
-## [Unreleased]
+## [Unreleased] — the documentation is a site now
+
+A 900-line README is where a fact goes to hide. Everything was in it and nothing
+was findable: no search, no table of contents, and a crop anchor grid eleven
+screens below the flag that needs it.
+
+### Added
+
+- A documentation site at <https://stamat.info/poops-images/>, built with
+  [Poops](https://github.com/stamat/poops) from `site/src` and published by a
+  GitHub Actions workflow on every push to `main`. Same content as the README,
+  one page per topic, with search and a table of contents. `npm run docs`
+  serves it locally on port 4041; `npm run docs:build` writes `site/dist`.
+- A **Quick examples** page on that site — a recipe per job, runnable as
+  written: a responsive srcset set, square thumbnails, an anchored hero crop, an
+  LQIP placeholder, a watermark, watch mode. It is the only page without a
+  README counterpart, because it composes documented facts rather than adding
+  any.
+
+### Fixed
+
+- The `poops.json` example under **Poops Integration** in the README was missing
+  a comma between two size objects, so copying it out produced invalid JSON. The
+  test that checks every README config example against the schema parses each
+  fence and skips what will not parse, which is exactly how a syntax error hid
+  from it; it now reports on the docs site's examples as well.
 
 ## [1.3.0] - 2026-08-06 — the config file tells you when it is wrong
 
