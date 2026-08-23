@@ -28,6 +28,9 @@ rm -f "$notes"
 # sitting inside a code fence, so a heading only counts when it is prose. Closing
 # a fence takes a marker at least as long as the one that opened it, the way
 # ````markdown wraps ```html.
+#
+# A fence left open swallows every heading under it, so nothing is found and the
+# release would go out with its changelog untouched — awk exits 3 to stop it.
 title="$(awk -v version="$version" -v today="$today" -v notes="$notes" -v out="$rewritten" '
   BEGIN { fence = ""; state = 0 }
   {
@@ -56,7 +59,11 @@ title="$(awk -v version="$version" -v today="$today" -v notes="$notes" -v out="$
     if (state == 1) print $0 > notes
     print $0 > out
   }
-' "$changelog")"
+  END { if (fence != "") exit 3 }
+' "$changelog")" || {
+  echo "$changelog has an unclosed code fence — every heading below it is invisible to this script. Close it and re-run." >&2
+  exit 1
+}
 
 if [ ! -f "$notes" ] || ! grep -q '[^[:space:]]' "$notes"; then
   rm -f "$notes"
