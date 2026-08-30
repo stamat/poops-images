@@ -12,6 +12,11 @@ const FIXTURES_DIR = path.join(import.meta.dirname, 'fixtures')
 const TEST_INPUT = path.join(FIXTURES_DIR, 'cli-input')
 const TEST_OUTPUT = path.join(FIXTURES_DIR, 'cli-output')
 
+// Each case spawns a node process that loads sharp and runs a whole build. On the
+// Windows runner that alone overran jest's 5s default and failed the suite on time,
+// not on behaviour.
+const SPAWN_TIMEOUT = 20000
+
 function cleanup(dir) {
   if (fs.existsSync(dir)) fs.rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 })
 }
@@ -41,7 +46,7 @@ describe('cli exit codes', () => {
   it('a clean build exits 0', async() => {
     const { code } = await run(['--widths', '50', '--in', TEST_INPUT, '--out', TEST_OUTPUT])
     expect(code).toBe(0)
-  })
+  }, SPAWN_TIMEOUT)
 
   it('a build with a bad source exits 1 and still processes the rest', async() => {
     fs.writeFileSync(path.join(TEST_INPUT, 'garbage.jpg'), 'not an image')
@@ -49,5 +54,5 @@ describe('cli exit codes', () => {
     expect(code).toBe(1)
     // The good file still went through — the bad one failed alone
     expect(fs.existsSync(path.join(TEST_OUTPUT, 'good-50w.jpg'))).toBe(true)
-  })
+  }, SPAWN_TIMEOUT)
 })

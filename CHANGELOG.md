@@ -34,7 +34,25 @@ On `script/publish`, `script/changelog` cuts this section into a released entry
 in the same commit as the version bump, and the entry becomes the body of the
 GitHub release verbatim.
 
-## [Unreleased]
+## [Unreleased] — CI is green again
+
+Nothing shipped to users was broken; the test suite was. Every case in
+`__tests__/bliss.test.js` also encodes the full-size original, and the fixture
+was a 4400x3300 photograph — 14.5 megapixels. AVIF at that size took 47s per
+encode on a two-core runner against sharp 0.35 (31s against 0.33, which is why
+the suite went red at the version bump and not at a code change), so jest's
+15s and 30s per-case budgets ran out and CI failed on the clock. On Windows the
+two `__tests__/cli.test.js` cases spawn a node process that loads sharp and
+runs a whole build, which does not fit jest's 5s default either.
+
+### Fixed
+
+- The `bliss.jpg` test fixture is now 1200x900. The size literals that were
+  pinned to the old source dimensions moved with it — the guarantees each case
+  makes are unchanged. A full-size AVIF encode went from 47s to 3.4s, and the
+  suite from 215s with 14 failures to 87s green on a two-core Linux box.
+- The two CLI exit-code cases carry an explicit 20s timeout, named for what
+  they are waiting on: a process spawn, not image work.
 
 ## [1.4.0] - 2026-08-06 — the documentation is a site now
 

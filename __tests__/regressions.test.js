@@ -130,7 +130,7 @@ describe('resizeFirst — no upscaling past the base (README: "Images are never 
     await processor.processAll({ force: true })
 
     const files = outputs()
-    // Control: original pipeline is unaffected by resizeFirst — 800x600 from 4400x3300 is legit.
+    // Control: original pipeline is unaffected by resizeFirst — 800x600 from 1200x900 is legit.
     // `big` is the sole (largest) member of its named group, so it drops the width suffix.
     expect(files).toContain('bliss-big.jpg')
 
@@ -166,7 +166,7 @@ describe('resizeFirst — operation ordering (locks behavior through refactors)'
   }
 
   it('default: operations run on the full-size source', async() => {
-    expect(await sidecarWidth(undefined)).toBe(4400)
+    expect(await sidecarWidth(undefined)).toBe(1200)
   })
 
   it('resizeFirst: true — operations run on each already-resized variant', async() => {

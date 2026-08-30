@@ -4,7 +4,10 @@ import path from 'node:path'
 import sharp from 'sharp'
 import ImageProcessor from '../lib/processor.js'
 
-// bliss.jpg: 4400x3300, JPEG, no alpha, sRGB (4:3 aspect ratio)
+// bliss.jpg: 1200x900, JPEG, no alpha, sRGB (4:3 aspect ratio). Deliberately small:
+// every case here also encodes the full-size original, and AVIF at 14 megapixels
+// took 47s per encode on a two-core runner — the suite timed out in CI, not failed.
+// Deliberately not covered: behaviour specific to very large sources.
 const BLISS_PATH = path.join(import.meta.dirname, 'fixtures', 'bliss.jpg')
 const FIXTURES_DIR = path.join(import.meta.dirname, 'fixtures')
 const TEST_INPUT = path.join(FIXTURES_DIR, 'bliss-input')
@@ -50,7 +53,7 @@ describe('bliss.jpg — comprehensive real image test', () => {
       cleanup(TEST_OUTPUT)
       await processor.processAll({ force: true })
 
-      // 4400x3300 (4:3) fit inside 300x300 → 300x225
+      // 1200x900 (4:3) fit inside 300x300 → 300x225
       // 'medium' is the sole (largest) member of its group → no width suffix
       const files = listOutputFiles()
       const variant = files.find(f => f === 'bliss-medium.jpg')
@@ -73,7 +76,7 @@ describe('bliss.jpg — comprehensive real image test', () => {
       cleanup(TEST_OUTPUT)
       await processor.processAll({ force: true })
 
-      // 4400x3300 (4:3) fit inside 1000x500 → 667x500 (height-constrained).
+      // 1200x900 (4:3) fit inside 1000x500 → 667x500 (height-constrained).
       // Unnamed size → filename carries the actual (667), not configured (1000), width.
       const files = listOutputFiles()
       const variant = files.find(f => f.startsWith('bliss-') && /-\d+w\.jpg$/.test(f))
@@ -115,7 +118,7 @@ describe('bliss.jpg — comprehensive real image test', () => {
       const processor = new ImageProcessor({
         in: TEST_INPUT,
         out: TEST_OUTPUT,
-        sizes: [{ name: 'hero', width: 1920, height: 600, crop: ['center', 'top'] }],
+        sizes: [{ name: 'hero', width: 1000, height: 300, crop: ['center', 'top'] }],
 
       })
 
@@ -127,8 +130,8 @@ describe('bliss.jpg — comprehensive real image test', () => {
       expect(variant).toBeDefined()
 
       const meta = await sharp(path.join(TEST_OUTPUT, variant)).metadata()
-      expect(meta.width).toBe(1920)
-      expect(meta.height).toBe(600)
+      expect(meta.width).toBe(1000)
+      expect(meta.height).toBe(300)
     })
 
     it('should produce exact dimensions for all 9 crop positions', async() => {
@@ -178,7 +181,7 @@ describe('bliss.jpg — comprehensive real image test', () => {
           { name: 'medium', width: 300, height: 300 },
           { name: 'medium_large', width: 768, height: 0 },
           { name: 'large', width: 1024, height: 1024 },
-          { name: 'hero', width: 1920, height: 600, crop: ['center', 'top'] }
+          { name: 'hero', width: 1000, height: 300, crop: ['center', 'top'] }
         ],
         exclude: ['gallery/**']
       })
@@ -201,7 +204,7 @@ describe('bliss.jpg — comprehensive real image test', () => {
       // large: soft crop 1024x1024 → 1024x768
       expect(files).toContain('bliss-large.jpg')
 
-      // hero: hard crop → 1920x600
+      // hero: hard crop → 1000x300
       expect(files).toContain('bliss-hero.jpg')
 
       expect(files.filter(f => f.startsWith('bliss-'))).toHaveLength(5)
@@ -232,13 +235,13 @@ describe('bliss.jpg — comprehensive real image test', () => {
       // Hard crop: exact 150x150
       await check('bliss-thumbnail.jpg', 150, 150)
 
-      // Soft crop: 4400x3300 into 300x300 → 300x225
+      // Soft crop: 1200x900 into 300x300 → 300x225
       await check('bliss-medium.jpg', 300, 225)
 
-      // Width only: 4400x3300 → 768x576
+      // Width only: 1200x900 → 768x576
       await check('bliss-medium_large.jpg', 768, 576)
 
-      // Soft crop: 4400x3300 into 1024x1024 → 1024x768
+      // Soft crop: 1200x900 into 1024x1024 → 1024x768
       await check('bliss-large.jpg', 1024, 768)
     })
   })
@@ -464,8 +467,8 @@ describe('bliss.jpg — comprehensive real image test', () => {
         in: TEST_INPUT,
         out: TEST_OUTPUT,
         sizes: [
-          { name: 'ok', width: 2000, height: 0 },
-          { name: 'toobig', width: 5000, height: 0 }
+          { name: 'ok', width: 1000, height: 0 },
+          { name: 'toobig', width: 2000, height: 0 }
         ],
         exclude: ['gallery/**']
       })
@@ -474,8 +477,8 @@ describe('bliss.jpg — comprehensive real image test', () => {
       await processor.processAll({ force: true })
 
       const files = listOutputFiles()
-      // Width-only soft crops still can't upscale: 'ok' (2000 ≤ 4400) is produced,
-      // 'toobig' (5000 > 4400) is dropped.
+      // Width-only soft crops still can't upscale: 'ok' (1000 ≤ 1200) is produced,
+      // 'toobig' (2000 > 1200) is dropped.
       expect(files.some(f => f.startsWith('bliss-ok'))).toBe(true)
       expect(files.some(f => f.startsWith('bliss-toobig'))).toBe(false)
     })
@@ -485,9 +488,9 @@ describe('bliss.jpg — comprehensive real image test', () => {
         in: TEST_INPUT,
         out: TEST_OUTPUT,
         sizes: [
-          { name: 'ok', width: 2000, height: 2000, crop: true },
-          { name: 'toowide', width: 5000, height: 1000, crop: true },
-          { name: 'tootall', width: 1000, height: 5000, crop: true }
+          { name: 'ok', width: 800, height: 800, crop: true },
+          { name: 'toowide', width: 2000, height: 400, crop: true },
+          { name: 'tootall', width: 400, height: 2000, crop: true }
         ],
         exclude: ['gallery/**']
       })
@@ -495,15 +498,15 @@ describe('bliss.jpg — comprehensive real image test', () => {
       cleanup(TEST_OUTPUT)
       await processor.processAll({ force: true })
 
-      // bliss is 4400x3300. Oversized crops are no longer dropped — they scale
+      // bliss is 1200x900. Oversized crops are no longer dropped — they scale
       // down proportionally to the largest box that fits, keeping the crop ratio.
       const dims = async(name) => {
         const m = await sharp(path.join(TEST_OUTPUT, `bliss-${name}.jpg`)).metadata()
         return [m.width, m.height]
       }
-      expect(await dims('ok')).toEqual([2000, 2000])       // fits as-is
-      expect(await dims('toowide')).toEqual([4400, 880])   // 5:1, width-limited
-      expect(await dims('tootall')).toEqual([660, 3300])   // 1:5, height-limited
+      expect(await dims('ok')).toEqual([800, 800])         // fits as-is
+      expect(await dims('toowide')).toEqual([1200, 240])   // 5:1, width-limited
+      expect(await dims('tootall')).toEqual([180, 900])    // 1:5, height-limited
     })
   })
 
@@ -679,10 +682,10 @@ describe('bliss.jpg — comprehensive real image test', () => {
       // Should NOT have any -NNNw pattern
       expect(files.some(f => /\d+w\./.test(f))).toBe(false)
 
-      // Dimensions should match source (4400x3300)
+      // Dimensions should match source (1200x900)
       const meta = await sharp(path.join(TEST_OUTPUT, 'bliss.jpg')).metadata()
-      expect(meta.width).toBe(4400)
-      expect(meta.height).toBe(3300)
+      expect(meta.width).toBe(1200)
+      expect(meta.height).toBe(900)
     })
 
     it('should work with single format', async() => {
@@ -732,7 +735,7 @@ describe('bliss.jpg — comprehensive real image test', () => {
           { name: 'medium', width: 300, height: 300 },
           { name: 'medium_large', width: 768, height: 0 },
           { name: 'large', width: 1024, height: 1024 },
-          { name: 'hero', width: 1920, height: 600, crop: ['center', 'top'] },
+          { name: 'hero', width: 1000, height: 300, crop: ['center', 'top'] },
           { name: 'card', width: 400, height: 300, crop: ['center', 'center'] }
         ],
         format: ['webp', 'avif'],
@@ -781,7 +784,7 @@ describe('bliss.jpg — comprehensive real image test', () => {
       await check('bliss-medium.webp', 300, 225)         // soft crop 4:3
       await check('bliss-medium_large.webp', 768, 576)   // width-only 4:3
       await check('bliss-large.webp', 1024, 768)        // soft crop 4:3
-      await check('bliss-hero.webp', 1920, 600)         // anchor crop
+      await check('bliss-hero.webp', 1000, 300)         // anchor crop
       await check('bliss-card.webp', 400, 300)           // anchor crop
     }, 30000)
   })
