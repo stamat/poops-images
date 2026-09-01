@@ -45,7 +45,7 @@
   },
   "dependencies": {
     "argoyle": "^1.0.0",
-    "chokidar": "^3.5.3",
+    "chokidar": "^5.0.0",
     "exif-reader": "^2.0.3",
     "glob": "^13.0.6",
     "printstyle": "^1.0.0",
